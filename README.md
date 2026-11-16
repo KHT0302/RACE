@@ -1,4 +1,4 @@
 # BSPN 400m 뽑기 레이스
 
-- 진행자: 이 주소를 열고 [중계 켜기] → QR 보여주기
-- 보는 사람: QR을 찍으면 로그인 없이 중계 화면만 보여요
+- 프로그램: https://kht0302.github.io/RACE/
+- 선생님용 안내: https://kht0302.github.io/RACE/guide.html
