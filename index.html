@@ -250,6 +250,8 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
 .watchwait h1{margin:0;font-size:26px}.watchwait h1 em{font-style:normal;color:var(--accent)}.watchwait h1 span{color:#4cc9f0}
 .watchwait .wstat{margin:6px 0 0;font-size:17px;font-weight:800;color:#4cc9f0}
 .watchwait .wsub{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.credit{margin:6px 0 0;font-size:12px;color:var(--muted);letter-spacing:.01em}.credit b{color:var(--accent);font-weight:800}
+.watchwait .credit{margin-top:14px}
 .watchwait .wtips{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:12px;color:var(--muted)}
 .qrsheet{position:fixed;inset:0;z-index:95;background:rgba(5,8,20,.88);display:flex;align-items:center;justify-content:center;padding:16px}
 .qrcard{background:#fff;color:#141a2e;border-radius:18px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:min(92vw,460px);text-align:center}
@@ -336,6 +338,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
       <div>
         <h1 id="setTitle">400m <em>뽑기</em> 레이스</h1>
         <p id="setDesc">트랙 한 바퀴를 먼저 들어온 순서대로 당첨. 최대 200명까지 함께 달립니다.</p>
+        <p class="credit">제작 <b>김현태 선생님</b> (MAC_GWI) · 봉산중 BSPN</p>
       </div>
       <div class="headside"><span class="lane-chip" id="setChip">LANE 1–9 · 400 M</span><button class="fsbtn" id="fsBtn" type="button">⛶ 전체화면</button></div>
     </div>
@@ -467,6 +470,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
   <p class="wstat" id="wwStatus">연결하는 중…</p>
   <p class="wsub" id="wwSub">진행자가 출발하면 이 화면에서 경기가 자동으로 시작돼요.</p>
   <div class="wtips"><span>📱 가로로 돌리면 더 크게 보여요</span><span>🔊 소리는 경기 중 '효과음 켬'을 누르면 나와요</span></div>
+  <p class="credit">제작 <b>김현태 선생님</b> (MAC_GWI) · 봉산중 BSPN</p>
 </div></div>
 <div class="qrsheet" id="qrSheet" hidden><div class="qrcard">
   <b>QR을 찍으면 중계 화면이 열려요</b>
