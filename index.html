@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>
-<title>400m 뽑기 레이스</title>
+<title>뽑기 올림픽</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -163,6 +163,12 @@ textarea#names{width:100%;min-height:250px;resize:vertical;background:rgba(255,2
 #saveName{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}
 #saveName{flex:1;min-width:140px}
 .btn.pri{background:var(--accent);color:#2a1d00;border-color:var(--accent)}
+.opt input#boardIn{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:14px}
+.opt input#boardIn:focus{outline:2px solid var(--accent);outline-offset:1px}
+.opt .lab .hint{font-weight:400;font-size:11px;color:var(--muted);margin-left:6px}
+.ordnote{font-size:12px;color:var(--muted);margin-top:6px}
+.res-list.ord{max-height:min(46vh,420px);overflow-y:auto;padding-right:2px}
+.res-list.ord .winner{padding:6px 12px}.res-list.ord .winner .wr{font-size:18px}
 .saved{display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto}
 .saved .it{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;padding:6px 6px 6px 12px;font-size:13px}
 .saved .it small{color:var(--muted);margin-left:6px;font-family:var(--f-num);font-size:13px}
@@ -308,7 +314,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
 
 <div id="hud" hidden>
   <div class="hud-top">
-    <div class="bug"><span class="live">LIVE</span><span class="ttl">400m 뽑기 레이스</span><span class="rnd" id="hRound" hidden>1회차</span><span class="rnd livetag" id="liveTag" hidden>📡 같이 보기</span></div>
+    <div class="bug"><span class="live">LIVE</span><span class="ttl">뽑기 올림픽</span><span class="rnd" id="hRound" hidden>1회차</span><span class="rnd livetag" id="liveTag" hidden>📡 같이 보기</span></div>
     <div class="stat"><small>경기 시간</small><b id="hClock">0.00</b></div>
     <div class="stat"><small>선두 남은 거리</small><b id="hRemain" class="acc">400m</b></div>
     <div class="stat"><small>참가 / 당첨</small><b id="hCount">0 / 0</b></div>
@@ -347,7 +353,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
   <div class="card">
     <div class="card-head">
       <div>
-        <h1 id="setTitle">400m <em>뽑기</em> 레이스</h1>
+        <h1 id="setTitle">뽑기 <em>올림픽</em></h1>
         <p id="setDesc">트랙 한 바퀴를 먼저 들어온 순서대로 당첨. 최대 200명까지 함께 달립니다.</p>
       </div>
       <div class="headside"><span class="lane-chip" id="setChip">LANE 1–9 · 400 M</span><button class="fsbtn" id="fsBtn" type="button">⛶ 전체화면</button></div>
@@ -431,10 +437,22 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
           </div>
         </div>
         <div class="opt">
+          <div class="lab">전광판 문구 <span class="hint">비우면 종목 이름</span></div>
+          <input id="boardIn" maxlength="24" placeholder="예: 3반 청소당번 결정전" aria-label="전광판 문구">
+        </div>
+        <div class="opt">
+          <div class="lab">경기장 시간</div>
+          <div class="seg">
+            <input type="radio" name="tod" id="todN" value="night" checked><label for="todN">밤<small>조명 켠 야간 경기</small></label>
+            <input type="radio" name="tod" id="todD" value="day"><label for="todD">낮<small>파란 하늘 · 밝은 화면</small></label>
+          </div>
+        </div>
+        <div class="opt">
           <div class="lab">추첨 방식</div>
           <div class="seg">
             <input type="radio" name="seq" id="sq0" value="0" checked><label for="sq0">한 판<small>매번 전원 참가</small></label>
             <input type="radio" name="seq" id="sq1" value="1"><label for="sq1">당첨자 빠지기<small>남은 사람끼리 다음 판</small></label>
+            <input type="radio" name="seq" id="sq2" value="2"><label for="sq2">전원 순서<small>1등부터 꼴등까지</small></label>
           </div>
         </div>
         <div class="opt">
@@ -445,7 +463,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
           </div>
         </div>
         <div class="opt">
-          <div class="lab">한 판 당첨 인원</div>
+          <div class="lab" id="kLab">한 판 당첨 인원</div>
           <div class="stepper"><button id="kMinus" aria-label="당첨 인원 줄이기">−</button><input type="number" id="kIn" min="1" value="3" aria-label="당첨 인원"><button id="kPlus" aria-label="당첨 인원 늘리기">+</button><span class="hint">명 (먼저 도착한 순)</span></div>
         </div>
         <div class="opt">
@@ -491,7 +509,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
 
 <div class="sheet watchwait" id="watchWait" hidden><div class="card wcard">
   <div class="wlogo">📡</div>
-  <h1>400m <em>뽑기</em> 레이스 <span>중계</span></h1>
+  <h1>뽑기 <em>올림픽</em> <span>중계</span></h1>
   <p class="wstat" id="wwStatus">연결하는 중…</p>
   <p class="wsub" id="wwSub">진행자가 출발하면 이 화면에서 경기가 자동으로 시작돼요.</p>
   <div class="wtips"><span>📱 가로로 돌리면 더 크게 보여요</span><span>🔊 소리는 경기 중 '효과음 켬'을 누르면 나와요</span></div>
@@ -513,7 +531,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
     <div class="col">
       <div class="res-list" id="resList"></div>
       <details class="all" id="histBox" hidden open><summary>회차별 당첨자</summary><div class="hist" id="histList"></div></details>
-      <details class="all"><summary id="allSum">전체 순위 보기</summary><div class="all-list" id="allList"></div></details>
+      <details class="all" id="allBox"><summary id="allSum">전체 순위 보기</summary><div class="all-list" id="allList"></div></details>
       <div class="actions">
         <button class="btn" id="copyBtn">결과 복사</button>
         <button class="btn" id="viewBtn">시상식 크게 보기</button>
@@ -564,7 +582,7 @@ const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0x161d3a,170,560);
 const camera=new THREE.PerspectiveCamera(50,1,0.2,1500);
 const pipCam=new THREE.PerspectiveCamera(34,16/9,0.3,800);
-scene.add(new THREE.HemisphereLight(0xdfe8ff,0x2a3a24,0.75));
+const HEMI=new THREE.HemisphereLight(0xdfe8ff,0x2a3a24,0.75);scene.add(HEMI);
 const sun=new THREE.DirectionalLight(0xfff4e2,0.95);sun.position.set(50,120,80);scene.add(sun);
 function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;}
 const grad=new THREE.DataTexture(new Uint8Array([110,110,110,185,185,185,255,255,255]),3,1,THREE.RGBFormat);grad.minFilter=grad.magFilter=THREE.NearestFilter;grad.generateMipmaps=false;grad.needsUpdate=true;
@@ -572,7 +590,7 @@ const toon=(o={})=>new THREE.MeshToonMaterial(Object.assign({color:0xffffff,grad
 const OUTLINE=new THREE.MeshBasicMaterial({color:0x1b1630,side:THREE.BackSide});
 {
   const tex=canvasTex(16,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#070b1d');gr.addColorStop(.55,'#1a2350');gr.addColorStop(.78,'#4a3f78');gr.addColorStop(1,'#1b2240');g.fillStyle=gr;g.fillRect(0,0,w,h);});
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(900,24,16),new THREE.MeshBasicMaterial({map:tex,side:THREE.BackSide,fog:false})));
+  window.SKY=new THREE.Mesh(new THREE.SphereGeometry(900,24,16),new THREE.MeshBasicMaterial({map:tex,side:THREE.BackSide,fog:false}));SKY.userData.night=tex;scene.add(SKY);
   window.GROUND=new THREE.Mesh(new THREE.CircleGeometry(900,48),new THREE.MeshLambertMaterial({color:0x1a2a20}));GROUND.rotation.x=-Math.PI/2;GROUND.position.y=-1.2;scene.add(GROUND);
 }
 function ribbon(sA,sB,step,dA,dB,yA,yB){
@@ -623,7 +641,7 @@ function addLights(pts,h){
   pts.forEach(([x,z])=>{
     const p=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.8,h,8),pole);p.position.set(x,h/2,z);stadium.add(p);
     const hd=new THREE.Mesh(new THREE.BoxGeometry(7,3.4,1),lamp);hd.position.set(x,h+1,z);hd.lookAt(0,0,0);stadium.add(hd);
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:gl,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));sp.position.set(x,h+1,z);sp.scale.set(36,36,1);stadium.add(sp);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:gl,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));sp.position.set(x,h+1,z);sp.scale.set(36,36,1);sp.userData.glow=1;if(DAY)sp.material.opacity=0.12;stadium.add(sp);
   });
 }
 function finishStrip(w,y0){
@@ -632,7 +650,23 @@ function finishStrip(w,y0){
   const g=ribbon(400-U(0.35),400+U(0.35),U(0.35),-0.3,w+0.3,(y0||0)+0.045,(y0||0)+0.045);
   stadium.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:ck,side:THREE.DoubleSide})));
 }
+function buildJumbo(w){
+  const bt=boardTitle(),sub=BOARD?SPORTS[sport].title:'뽑기 올림픽';
+  const t=canvasTex(1024,384,(g,ww,h)=>{g.fillStyle='#0b1028';g.fillRect(0,0,ww,h);
+    g.strokeStyle='#ffc83d';g.lineWidth=10;g.strokeRect(10,10,ww-20,h-20);
+    g.fillStyle='rgba(255,255,255,.06)';for(let y=24;y<h-20;y+=8)g.fillRect(20,y,ww-40,2);
+    g.textAlign='center';g.textBaseline='middle';
+    g.fillStyle='#ffc83d';g.font='italic 800 52px "Barlow Condensed",sans-serif';g.fillText('BSPN  ·  LIVE',ww/2,70);
+    let fs=118;g.font=`400 ${fs}px "Black Han Sans","Noto Sans KR",sans-serif`;while(g.measureText(bt).width>ww-80&&fs>40){fs-=6;g.font=`400 ${fs}px "Black Han Sans","Noto Sans KR",sans-serif`;}
+    g.fillStyle='#ffffff';g.fillText(bt,ww/2,192);
+    g.fillStyle='#9fb0d8';g.font='700 40px "Noto Sans KR",sans-serif';g.fillText(sub,ww/2,300);});
+  const x=-(LS/2+R0+w+30),frame=new THREE.MeshLambertMaterial({color:0x1b2240});
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(40,15),new THREE.MeshBasicMaterial({map:t}));scr.position.set(x,24,0);scr.rotation.y=Math.PI/2;stadium.add(scr);
+  const bx=new THREE.Mesh(new THREE.BoxGeometry(1.2,16.4,41.4),frame);bx.position.set(x-0.7,24,0);stadium.add(bx);
+  [-12,12].forEach(z=>{const p=new THREE.Mesh(new THREE.BoxGeometry(1.4,17,1.4),frame);p.position.set(x-0.7,8.5,z);stadium.add(p);});
+}
 function buildOval(w){
+  buildJumbo(w);
   const sh=new THREE.Shape(),ri=R0-0.5;
   sh.moveTo(LS/2,-ri);sh.absarc(LS/2,0,ri,-Math.PI/2,Math.PI/2,false);sh.lineTo(-LS/2,ri);sh.absarc(-LS/2,0,ri,Math.PI/2,Math.PI*1.5,false);
   const gtex=canvasTex(64,64,(g,ww,h)=>{g.fillStyle='#2f7a3c';g.fillRect(0,0,ww,h);g.fillStyle='#348543';g.fillRect(0,0,ww/2,h);});
@@ -670,7 +704,7 @@ function buildPodium(){
     const b=new THREE.Mesh(new THREE.BoxGeometry(1.7,PODIUM.h[k],1.5),[side,side,top,side,new THREE.MeshLambertMaterial({map:t}),side]);
     b.position.set(PODIUM.x+PODIUM.dx[k],Y+PODIUM.h[k]/2,PODIUM.z);stadium.add(b);
   }
-  const bd=canvasTex(1024,320,(g,ww,h)=>{const gr=g.createLinearGradient(0,0,ww,0);gr.addColorStop(0,'#1d2a66');gr.addColorStop(1,'#3a1d66');g.fillStyle=gr;g.fillRect(0,0,ww,h);g.fillStyle='#ffc83d';g.fillRect(0,h-26,ww,26);g.fillStyle='#fff';g.textAlign='center';g.font='700 64px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText((SPORTS[sport]&&SPORTS[sport].title)||'400m 뽑기 레이스',ww/2,120);g.font='italic 800 110px "Barlow Condensed",sans-serif';g.fillStyle='#ffc83d';g.fillText('AWARDS',ww/2,240);});
+  const bd=canvasTex(1024,320,(g,ww,h)=>{const gr=g.createLinearGradient(0,0,ww,0);gr.addColorStop(0,'#1d2a66');gr.addColorStop(1,'#3a1d66');g.fillStyle=gr;g.fillRect(0,0,ww,h);g.fillStyle='#ffc83d';g.fillRect(0,h-26,ww,26);g.fillStyle='#fff';g.textAlign='center';g.font='700 64px "Black Han Sans","Noto Sans KR",sans-serif';{let bt=boardTitle(),fs=64;g.font=`700 ${fs}px "Black Han Sans","Noto Sans KR",sans-serif`;while(g.measureText(bt).width>ww-60&&fs>30){fs-=4;g.font=`700 ${fs}px "Black Han Sans","Noto Sans KR",sans-serif`;}g.fillText(bt,ww/2,120);}g.font='italic 800 110px "Barlow Condensed",sans-serif';g.fillStyle='#ffc83d';g.fillText('AWARDS',ww/2,240);});
   const back=new THREE.Mesh(new THREE.PlaneGeometry(8,2.5),new THREE.MeshBasicMaterial({map:bd}));back.position.set(PODIUM.x,Y+2.4,PODIUM.z-1.6);stadium.add(back);
   const legM=new THREE.MeshLambertMaterial({color:0x2a3352});[-3.8,3.8].forEach(dx=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.15,3.6,0.15),legM);l.position.set(PODIUM.x+dx,Y+1.8,PODIUM.z-1.65);stadium.add(l);});
 }
@@ -1139,12 +1173,12 @@ const SLIDE={scale:SLSC,kph:1,tubes:true,sideSign:-1,camDY:0.8,pos:slidePos,buil
 
 const OVAL={pos:ovalPos,scale:1};
 const SPORTS={
-  run:{name:'달리기',title:'400m 뽑기 레이스',course:OVAL},
-  obstacle:{name:'장애물 코스',title:'400m 장애물 뽑기',course:OVAL},
-  swim:{name:'수영',title:'100m 수영 뽑기',course:SWIM},
-  climb:{name:'암벽 등반',title:'16m 클라이밍 뽑기',course:CLIMB},
-  hall:{name:'학교 복도',title:'복도 레이스 뽑기',course:HALL},
-  slide:{name:'워터슬라이드',title:'워터슬라이드 뽑기',course:SLIDE}
+  run:{name:'달리기',title:'뽑기 올림픽 · 400m 달리기',course:OVAL},
+  obstacle:{name:'장애물 코스',title:'뽑기 올림픽 · 장애물 코스',course:OVAL},
+  swim:{name:'수영',title:'뽑기 올림픽 · 수영 100m',course:SWIM},
+  climb:{name:'암벽 등반',title:'뽑기 올림픽 · 암벽 등반',course:CLIMB},
+  hall:{name:'학교 복도',title:'뽑기 올림픽 · 학교 복도',course:HALL},
+  slide:{name:'워터슬라이드',title:'뽑기 올림픽 · 워터슬라이드',course:SLIDE}
 };
 COURSE=OVAL;
 
@@ -2133,6 +2167,38 @@ $('#bgmTest').onclick=()=>{if(!bgmURL)return;if(bgm.paused){bgmOn=true;bgmPlay(t
 $('#bgmBtn').onclick=()=>{bgmOn=!bgmOn;$('#bgmBtn').textContent=bgmOn?'음악 끔':'음악 켬';if(bgmOn)bgmPlay(false);else bgm.pause();};
 (async()=>{const b=await idbGet('bgm');if(b){setBgm(b,(await idbGet('bgmName'))||'음악');}})();
 
+
+// ================= 전광판 · 낮밤 · 전원 순서 =================
+let BOARD='',DAY=false,ordMode=false;
+function boardTitle(){return BOARD||(SPORTS[sport]&&SPORTS[sport].title)||'뽑기 올림픽';}
+const DAYSKY=canvasTex(16,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#2f7fd6');gr.addColorStop(.5,'#7fbdf0');gr.addColorStop(.78,'#d6ecfb');gr.addColorStop(1,'#cfe2ee');g.fillStyle=gr;g.fillRect(0,0,w,h);});
+function applyDay(on){
+  DAY=!!on;
+  SKY.material.map=DAY?DAYSKY:SKY.userData.night;SKY.material.needsUpdate=true;
+  scene.fog.color.set(DAY?0xcfe4f3:0x161d3a);scene.fog.near=DAY?220:170;scene.fog.far=DAY?760:560;
+  HEMI.color.set(DAY?0xffffff:0xdfe8ff);HEMI.groundColor.set(DAY?0x6b8a52:0x2a3a24);HEMI.intensity=DAY?1.05:0.75;
+  sun.intensity=DAY?1.2:0.95;sun.color.set(DAY?0xfffaf0:0xfff4e2);
+  GROUND.material.color.set(DAY?0x4f8a45:0x1a2a20);
+  if(stadium)stadium.traverse(o=>{if(o.userData&&o.userData.glow)o.material.opacity=DAY?0.12:1;});
+  document.body.classList.toggle('day',DAY);
+}
+function readSetupExtras(){
+  BOARD=($('#boardIn').value||'').trim().slice(0,24);
+  ordMode=(document.querySelector('input[name=seq]:checked')||{}).value==='2';
+}
+function syncKUI(){
+  const ord=(document.querySelector('input[name=seq]:checked')||{}).value==='2';
+  $('#kLab').textContent=ord?'전원 순서 모드':'한 판 당첨 인원';
+  document.querySelector('.stepper').hidden=ord;
+  let n=$('#ordNote');if(!n){n=document.createElement('div');n.id='ordNote';n.className='ordnote';document.querySelector('.stepper').after(n);}
+  n.hidden=!ord;n.textContent='결과에 1등부터 꼴등까지 전원 순서가 나와요 (시상식은 1~3등)';
+}
+document.querySelectorAll('input[name=seq]').forEach(r=>r.addEventListener('change',syncKUI));
+document.querySelectorAll('input[name=tod]').forEach(r=>r.addEventListener('change',()=>{const d=r.value==='day'&&r.checked;if(r.checked){applyDay(r.value==='day');try{localStorage.setItem('race400_day',r.value);}catch(e){}}}));
+$('#boardIn').addEventListener('input',()=>{try{localStorage.setItem('race400_board',$('#boardIn').value);}catch(e){}});
+try{const d=localStorage.getItem('race400_day');if(d==='day'){$('#todD').checked=true;applyDay(true);}const b=localStorage.getItem('race400_board');if(b)$('#boardIn').value=b;}catch(e){}
+syncKUI();
+
 // ================= flow (incl. 당첨자 빠지기) =================
 let seqMode=false,roster=[],round=1,history=[],Kset=3,pending=false;
 function parseNames(){return $('#names').value.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);}
@@ -2144,7 +2210,7 @@ swim:['수영','레이스','바다 오픈워터 100m! 결승 터치패드를 손
 climb:['클라이밍','레이스','넓은 16m 클라이밍 벽, 정상 라인을 먼저 터치한 순서대로 당첨.','WALL · 16 M'],
 hall:['복도','레이스','급식실까지 먼저 도착한 순서대로 당첨. 선생님 단속 주의!','HALLWAY · 240 M'],
 slide:['워터슬라이드','레이스','나선 슬라이드를 타고 먼저 착수한 순서대로 당첨.','SLIDE · 280 M']};
-function setHead(){const v=(document.querySelector('input[name=sport]:checked')||{}).value||'run',h=SPHEAD[v]||SPHEAD.run;$('#setTitle').innerHTML=h[0]+' <em>뽑기</em> '+h[1];$('#setDesc').textContent=h[2];$('#setChip').textContent=h[3];}
+function setHead(){const v=(document.querySelector('input[name=sport]:checked')||{}).value||'run',h=SPHEAD[v]||SPHEAD.run;$('#setTitle').innerHTML='뽑기 <em>올림픽</em>';$('#setDesc').textContent=h[2];$('#setChip').textContent=h[3];}
 document.querySelectorAll('input[name=sport]').forEach(r=>r.addEventListener('change',()=>{setHead();if(state==='setup'){const l=parseNames().slice(0,MAXN);buildRunners(l.length>=2?l:names,document.querySelector('input[name=mode]:checked').value);}}));
 $('#clearBtn').onclick=()=>{const b=$('#clearBtn');if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더 누르면 지워져요';setTimeout(()=>{delete b.dataset.arm;b.textContent='모두 지우기';},4000);return;}delete b.dataset.arm;b.textContent='모두 지우기';showTab('type');setList([]);renderSlots(0);};
 // ---- roster helpers ----
@@ -2227,7 +2293,7 @@ $('#fmtBtn').onclick=async()=>{
   const b=$('#fmtBtn'),dl=await getDownloads();
   if(!dl){showFmtFallback('이 화면에서는 파일을 내려받을 수 없어요. 아래처럼 엑셀을 만들어 불러오면 됩니다.');return;}
   try{const bin=atob(TPL_B64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-    await dl.save({filename:'400m_뽑기레이스_명단양식.xlsx',data:u});b.textContent='양식 받음 · 이름 적고 불러오세요';setTimeout(()=>b.textContent='선수명단 양식 받기',3500);
+    await dl.save({filename:'뽑기올림픽_명단양식.xlsx',data:u});b.textContent='양식 받음 · 이름 적고 불러오세요';setTimeout(()=>b.textContent='선수명단 양식 받기',3500);
   }catch(e){const c=e&&e.code;if(c==='declined')return;if(c==='rate_limited'){b.textContent='잠시 후 다시 눌러주세요';setTimeout(()=>b.textContent='선수명단 양식 받기',2500);return;}
     showFmtFallback('양식 파일을 건네지 못했어요. 아래처럼 엑셀을 만들어 불러오면 됩니다.');}
 };
@@ -2265,6 +2331,7 @@ $('#startBtn').onclick=()=>{
   evLevel=+document.querySelector('input[name=ev]:checked').value;
   velMul=+document.querySelector('input[name=sp]:checked').value;
   seqMode=document.querySelector('input[name=seq]:checked').value==='1';
+  readSetupExtras();if(ordMode)Kset=Math.min(3,list.length);
   if(!(pending&&seqMode)){roster=list.slice();round=1;history=[];}
   if(seqMode&&list.length<=Kset){Kset=Math.max(1,list.length-1);$('#kIn').value=Kset;}
   pending=false;resRecorded=false;setRoundBar();
@@ -2286,11 +2353,11 @@ function startCountdown(){
   sortRanks();
   $('#setup').hidden=true;$('#results').hidden=true;$('#showResBtn').hidden=true;$('#hud').hidden=false;setCam('auto');
   $('#bgmTest').textContent='미리 듣기';fadeTo=null;bgmPlay(true);
-  $('.bug .ttl').textContent=SPORTS[sport].title;zcIdx=-1;
+  $('.bug .ttl').textContent=boardTitle();zcIdx=-1;
   const rb=$('#hRound');rb.hidden=!seqMode;rb.textContent=round+'회차';
   state='countdown';cdT=0;cdStep=-1;shotSnap=true;
   if(innerHeight>innerWidth&&innerWidth<760){const h=$('#rotHint');h.hidden=false;h.style.opacity=1;clearTimeout(h._t);h._t=setTimeout(()=>{h.style.opacity=0;setTimeout(()=>h.hidden=true,450);},3200);}
-  say(`${seqMode?round+'회차, ':''}${N}명의 선수가 출발선에 섰습니다. 당첨은 ${K}명!`,'중계');
+  say(ordMode?`${BOARD?BOARD+'! ':''}${N}명 전원의 순서를 정합니다!`:`${BOARD?BOARD+'! ':''}${seqMode?round+'회차, ':''}${N}명의 선수가 출발선에 섰습니다. 당첨은 ${K}명!`,'중계');
 }
 function updateCountdown(rdt){
   cdT+=rdt;const st=Math.floor(cdT/0.9);
@@ -2303,10 +2370,12 @@ let resRecorded=false;
 function showResults(){
   state='results';$('#hud').hidden=true;$('#showResBtn').hidden=true;
   const win=finishOrder.slice(0,K);
-  let logged=false;if(!resRecorded){resRecorded=true;history.push({round,names:win.map(i=>names[i])});logged=logWin(win.map(i=>names[i]));}
-  $('#resTitle').innerHTML=seqMode?`${round}회차 <em>결과</em>`:'추첨 <em>결과</em>';
-  $('#resSub').textContent=`${N}명 중 ${K}명 당첨 · ${SPORTS[sport].name} · ${mode==='human'?'사람':'동물'} 선수`+(logged?' · 당첨 기록에 저장됨':'');
-  $('#resList').innerHTML=win.map((i,r)=>`<div class="winner ${r<3?'p'+(r+1):''}"><div class="wr">${r+1}</div><div class="wn">${esc(names[i])}</div><div class="wt">${FT[i].toFixed(2)}초</div></div>`).join('');
+  let logged=false;if(!resRecorded){resRecorded=true;history.push({round,names:win.map(i=>names[i])});logged=logWin((ordMode?resOrder:win).map(i=>names[i]));}
+  $('#resTitle').innerHTML=ordMode?'전원 <em>순서</em>':seqMode?`${round}회차 <em>결과</em>`:'추첨 <em>결과</em>';
+  $('#resSub').textContent=(BOARD?BOARD+' · ':'')+(ordMode?`${N}명 전원 순서`:`${N}명 중 ${K}명 당첨`)+` · ${SPORTS[sport].name} · ${mode==='human'?'사람':'동물'} 선수`+(logged?' · 당첨 기록에 저장됨':'');
+  const showL=ordMode?resOrder:win;$('#resList').classList.toggle('ord',ordMode);
+  $('#resList').innerHTML=showL.map((i,r)=>`<div class="winner ${r<3?'p'+(r+1):''}"><div class="wr">${r+1}</div><div class="wn">${esc(names[i])}</div><div class="wt">${FIN[i]?FT[i].toFixed(2)+'초':'—'}</div></div>`).join('');
+  $('#allBox')&&($('#allBox').hidden=ordMode);
   $('#allSum').textContent=`이번 판 전체 순위 (${N}명)`;
   $('#allList').innerHTML=resOrder.map((i,r)=>`<div><b>${r+1}</b><span>${esc(names[i])}${r<K?' · 당첨':''}</span></div>`).join('');
   const hb=$('#histBox');hb.hidden=history.length<2;
@@ -2322,6 +2391,7 @@ function showResults(){
     sb.textContent=left>=2?`당첨자 빼고 다음 판 준비 (남은 ${left}명)`:'처음 명단으로 다시';
     note.textContent='';
   }
+  sb.hidden=ordMode;
   if(typeof LIVE!=='undefined'){if(LIVE.follow)note.textContent='진행자가 다음 판을 시작하면 자동으로 따라가요';else if(LIVE.host)note.textContent='같이 보는 폰에도 같은 결과가 나와요';}
   $('#results').hidden=false;
 }
@@ -2354,7 +2424,7 @@ $('#secondaryBtn').onclick=()=>{
 };
 $('#copyBtn').onclick=()=>{
   const cur=finishOrder.slice(0,K).map((i,r)=>`${r+1}위 ${names[i]} (${FT[i].toFixed(2)}초)`).join('\n');
-  const t=history.length>1?`400m 뽑기 레이스 연속 뽑기 결과\n`+history.map(h=>`${h.round}회차: ${h.names.join(', ')}`).join('\n'):`400m 뽑기 레이스 결과 (${N}명 중 ${K}명 당첨)\n`+cur;
+  const t=history.length>1?`뽑기 올림픽 연속 뽑기 결과\n`+history.map(h=>`${h.round}회차: ${h.names.join(', ')}`).join('\n'):(ordMode?`뽑기 올림픽 전원 순서 (${N}명)\n`+resOrder.map((i,r)=>`${r+1}. ${names[i]}`).join('\n'):`뽑기 올림픽 결과 (${N}명 중 ${K}명 당첨)\n`+cur);
   const b=$('#copyBtn');navigator.clipboard.writeText(t).then(()=>{b.textContent='복사됨';setTimeout(()=>b.textContent='결과 복사',1500);}).catch(()=>{b.textContent='복사 안 됨';setTimeout(()=>b.textContent='결과 복사',1500);});
 };
 $('#setupBtn').onclick=()=>{toSetup();if(seqMode&&roster.length){round=1;history=[];setList(roster);}};
@@ -2415,7 +2485,7 @@ function rosterLabel(list){
 function curLabel(){const l=(roster&&roster.length?roster:parseNames());return rosterLabel(l);}
 function logWin(win){
   if(typeof LIVE!=='undefined'&&LIVE.watch)return false;
-  const a=getLog();a.push({t:Date.now(),label:rosterLabel(roster&&roster.length?roster:names),sport:SPORTS[sport].name,n:N,round:seqMode?round:0,w:win});
+  const a=getLog();a.push({t:Date.now(),label:rosterLabel(roster&&roster.length?roster:names),sport:SPORTS[sport].name,n:N,round:seqMode?round:0,w:win,ord:ordMode?1:0,bt:BOARD||''});
   putLog(a);renderLogN();return true;
 }
 function renderLogN(){const n=getLog().length;$('#logN').textContent=n?n:'';}
@@ -2424,20 +2494,20 @@ function fmtT(t){const d=new Date(t);return `${String(d.getHours()).padStart(2,'
 function sameDay(a,b){const x=new Date(a),y=new Date(b);return x.getFullYear()===y.getFullYear()&&x.getMonth()===y.getMonth()&&x.getDate()===y.getDate();}
 function renderLog(){
   renderLogN();
-  const a=getLog(),lab=curLabel(),mine=a.filter(e=>e.label===lab);
+  const a=getLog(),lab=curLabel(),mine=a.filter(e=>e.label===lab&&!e.ord);
   const cnt={};mine.forEach(e=>e.w.forEach(n=>cnt[n]=(cnt[n]||0)+1));
   const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,6);
   $('#logTop').innerHTML=a.length?`지금 명단 <b>${esc(lab)}</b> · 기록 ${mine.length}판`+(top.length?`<div class="top">${top.map(([n,c])=>`<span>${esc(n)} ${c}회</span>`).join('')}</div>`:''):'';
   if(!a.length){$('#logList').innerHTML='<div class="empty" style="font-size:12px;color:var(--muted);padding:10px 2px;line-height:1.6">아직 기록이 없어요. 경기가 끝나면 당첨자가 여기에 자동으로 쌓여요. 기록은 이 기기 브라우저에만 저장돼요.</div>';return;}
   let h='',day='';
   a.slice().reverse().slice(0,200).forEach(e=>{const d=fmtD(e.t);if(d!==day){day=d;h+=`<div class="day">${d}${sameDay(e.t,Date.now())?' · 오늘':''}</div>`;}
-    h+=`<div class="ent${e.label===lab?' cur':''}"><div class="meta"><b>${fmtT(e.t)}</b><span>${esc(e.label)}</span><span>${esc(e.sport)}</span>${e.round?`<span>${e.round}회차</span>`:''}<span>${e.n}명 중 ${e.w.length}명</span></div><div class="ws">${e.w.map((n,i)=>`${i+1}. ${esc(n)}`).join('  ')}</div></div>`;});
+    h+=`<div class="ent${e.label===lab?' cur':''}"><div class="meta"><b>${fmtT(e.t)}</b><span>${esc(e.label)}</span>${e.bt?`<span>${esc(e.bt)}</span>`:''}<span>${esc(e.sport)}</span>${e.round?`<span>${e.round}회차</span>`:''}<span>${e.ord?`전원 순서 ${e.n}명`:`${e.n}명 중 ${e.w.length}명`}</span></div><div class="ws">${e.w.map((n,i)=>`${i+1}. ${esc(n)}`).join('  ')}</div></div>`;});
   $('#logList').innerHTML=h;
 }
 function logMsg(t){const m=$('#logMsg');m.textContent=t;clearTimeout(m._t);m._t=setTimeout(()=>m.textContent='',3500);}
 function skipWinners(today){
   const a=getLog(),lab=curLabel(),list=parseNames();
-  const src=a.filter(e=>e.label===lab&&(!today||sameDay(e.t,Date.now())));
+  const src=a.filter(e=>e.label===lab&&!e.ord&&(!today||sameDay(e.t,Date.now())));
   const ws=new Set();src.forEach(e=>e.w.forEach(n=>ws.add(n)));
   const rest=list.filter(n=>!ws.has(n)),out=list.length-rest.length;
   if(!out){logMsg(today?'오늘 이 명단에서 당첨된 사람이 없어요':'이 명단의 당첨 기록이 없어요');return;}
@@ -2451,10 +2521,10 @@ $('#logClear').onclick=()=>{const b=$('#logClear');if(!b._arm){b._arm=1;b.textCo
 $('#logCsv').onclick=async()=>{
   const a=getLog();if(!a.length){logMsg('받을 기록이 없어요');return;}
   const q=v=>`"${String(v).replace(/"/g,'""')}"`;
-  const rows=[['날짜','시간','명단','종목','회차','참가 인원','순위','이름']];
-  a.forEach(e=>{const d=new Date(e.t),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;e.w.forEach((n,i)=>rows.push([ds,fmtT(e.t),e.label,e.sport,e.round||'',e.n,i+1,n]));});
+  const rows=[['날짜','시간','명단','전광판 문구','종목','방식','회차','참가 인원','순위','이름']];
+  a.forEach(e=>{const d=new Date(e.t),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;e.w.forEach((n,i)=>rows.push([ds,fmtT(e.t),e.label,e.bt||'',e.sport,e.ord?'전원 순서':'당첨',e.round||'',e.n,i+1,n]));});
   const csv='﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n');
-  const fn=`뽑기레이스_당첨기록_${new Date().toISOString().slice(0,10)}.csv`;
+  const fn=`뽑기올림픽_당첨기록_${new Date().toISOString().slice(0,10)}.csv`;
   const dl=await getDownloads();
   if(dl){try{await dl.save({filename:fn,data:csv});logMsg('기록 파일을 건넸어요');}catch(e){if(e&&e.code!=='declined')logMsg('파일을 건네지 못했어요');}return;}
   try{const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const el=document.createElement('a');el.href=url;el.download=fn;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);logMsg('기록 파일을 받았어요');}catch(e){logMsg('이 화면에서는 파일을 받을 수 없어요');}
@@ -2497,7 +2567,7 @@ function renderLive(){
   if(LIVE.host){bar.classList.add('on');t.textContent=`📡 중계 중 · 보는 폰 ${LIVE.watchers}대`;sub.textContent=LIVE.msg||'QR을 보여주세요. 출발하면 QR로 들어온 폰에서도 같은 경기가 시작돼요.';b.textContent='중계 끄기';q.hidden=false;}
   else{bar.classList.remove('on');t.textContent='📡 폰으로 중계하기';sub.textContent=LIVE.kind==='mqtt'?'QR을 찍은 사람은 로그인 없이 중계 화면만 보게 돼요.':'QR을 찍은 사람은 명단·설정 없이 중계 화면만 보게 돼요.';b.textContent='중계 켜기';q.hidden=true;}
 }
-function livePayload(){return {id:raceSeed,seed:raceSeed,names:names.join('\n'),K,sport,mode,rv:useReview?1:0,ev:evLevel,sp:velMul,n:Math.max(0,logicN-logic0)};}
+function livePayload(){return {id:raceSeed,seed:raceSeed,names:names.join('\n'),K,sport,mode,rv:useReview?1:0,ev:evLevel,sp:velMul,n:Math.max(0,logicN-logic0),bt:BOARD,day:DAY?1:0,ord:ordMode?1:0};}
 function liveRun(d){
   if(!d||typeof d!=='object')return;
   const list=String(d.names||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,MAXN);if(list.length<2)return;
@@ -2506,6 +2576,7 @@ function liveRun(d){
   useReview=!!d.rv;evLevel=clamp(d.ev|0,0,2);velMul=[1,1.55,2.2].includes(+d.sp)?+d.sp:1;
   seqMode=false;pending=false;round=1;history=[];roster=list.slice();resRecorded=false;
   Kset=clamp(d.K|0,1,list.length);
+  BOARD=String(d.bt||'').slice(0,24);ordMode=!!d.ord;applyDay(!!d.day);
   if(state!=='setup')toSetup(true);
   setList(list);setRoundBar();
   LIVE.curId=d.id;
