@@ -1995,7 +1995,7 @@ function stepRace(dt){
   sortRanks();
   leaderP=S[order[0]];
   if(raceOver)return;
-  if(useReview&&!veil&&leaderP>380){veil=true;say('결승 구간! 최종 순위는 비디오 판독으로 공개됩니다','판독 예고',true);}
+  if(useReview&&!veil&&leaderP>380){veil=true;say('결승 구간! 최종 순위는 비디오 판독으로 공개됩니다','판독 예고',true,3);}
   updateTeacher(dt);
   record();triggerEvents();triggerSpecial();commentary();zoneCam();
   const fc=finishOrder.length;
@@ -2076,7 +2076,7 @@ const EV={
   80:{n:'데굴데굴',d:2.4,w:0,wd:0,c:['{n} 선수 계단에서 데굴데굴~ 오히려 더 빨라졌어요?!','{n} 선수 굴러 내려갑니다! 괜찮아요, 튼튼해요']},
   78:{n:'메뉴 확인',d:3.0,w:2,wd:1.5,c:['{n} 선수 게시판 앞에서 오늘 메뉴 확인 중… 치킨이다!','{n} 선수 {w}메뉴판 보고 감동합니다']}
 };
-const GAP=[[7,11],[3.5,6],[1.8,3.2]];
+const GAP=[[9,13],[5,8],[2.8,4.5]];
 let nextEvT=6,evs=[],pipEv=null,recent=[],BUD={},celebDone=false,diveCount=0,TE={on:false};
 function evName(ev){const e=EV[ev.type];return Array.isArray(e.n)?e.n[ev.v]:e.n;}
 function eventPool(){return Math.max(3,Math.min(N,Math.ceil(N*0.45),30));}
@@ -2087,10 +2087,18 @@ function pickType(drama){
   let r=rnd()*s;for(let k=0;k<ids.length;k++){r-=w[k];if(r<=0)return ids[k];}return ids[0];
 }
 function busy(){return evs.some(e=>simT<e.t0+e.dur&&e.main);}
+const BIGEV=new Set([1,8,12,16,17,19,22,34,40,50,72,76]);
+function evImportant(type,i,opts){
+  if(type===19||i<0)return true;if(i===followId)return true;
+  const r=rankOf[i],lim=Math.max(3,Math.min(K,6))+2;if(r<=lim)return true;
+  if(BIGEV.has(type)&&r<=Math.max(10,K+4))return true;
+  return false;
+}
 function startEvent(type,i,opts={}){
-  const e=EV[type];
+  const e=EV[type];opts=Object.assign({},opts);
+  {const imp=evImportant(type,i,opts),pipBusy=pipEv&&realT<pipEv.until+1.6;if(!imp){opts.quiet=true;opts.noPip=true;}else if(pipBusy)opts.noPip=true;}
   if(type!==19&&(ST[i]||FIN[i]||P[i]<20||P[i]>397))return false;
-  const dur=(opts.dur||e.d*(0.92+rnd()*0.16)),ev={type,i,v:0,t0:simT,dur,main:!opts.special,until:realT+dur+1.3};
+  const dur=(opts.dur||e.d*(0.92+rnd()*0.16)),ev={type,i,v:0,t0:simT,dur,main:!opts.special,until:realT+Math.max(dur+1.3,4.2)};
   if(type===2)ev.v=(rnd()*3)|0;
   if(type===15||type===54){const r=rankOf[i];let j=order[r];if(j===undefined||ST[j]||FIN[j]||Math.abs(P[j]-P[i])>4)j=order[r-2];if(j===undefined||j===i||ST[j]||FIN[j]||Math.abs(P[j]-P[i])>4)return false;
     ev.j=j;BUD={};BUD[i]=j;BUD[j]=i;BSIDE[i]=D[j]<D[i]?1:-1;BSIDE[j]=-BSIDE[i];ST[j]=type;STT[j]=0;STD[j]=dur;}
@@ -2108,7 +2116,7 @@ function startEvent(type,i,opts={}){
   if(!opts.noPip){pipEv=ev;pipOrbit=Math.random()<0.5?1:-1;$('#pipKind').textContent='돌발상황';}
   if(opts.quiet)return true;
   const caps=opts.cap?[opts.cap]:type===2?e.c[ev.v]:((COURSE.caps&&COURSE.caps[type])||e.c),w=i>=0&&P[i]>315?'결승선 앞에서 ':'';
-  say(caps[(rnd()*caps.length)|0].replace('{n}',i>=0?names[i]:'').replace('{m}',ev.j!==undefined?names[ev.j]:'').replace('{w}',w),type===19?'난입':'돌발상황',i>=0&&rankOf[i]<=3);
+  say(caps[(Math.random()*caps.length)|0].replace('{n}',i>=0?names[i]:'').replace('{m}',ev.j!==undefined?names[ev.j]:'').replace('{w}',w),type===19?'난입':'돌발상황',i>=0&&rankOf[i]<=3,i>=0&&rankOf[i]<=3?2:1);
   if(opts.noPip)return true;
   $('#pipTag').textContent=evName(ev);
   $('#pipName').textContent=type===19?'체육 선생님 (기록 제외)':type===15?`${names[i]} & ${names[ev.j]}`:(veil||opts.special?names[i]:`${names[i]} (${rankOf[i]}위 달리던 중)`);
@@ -2161,10 +2169,10 @@ function onFinish(i){
 function finishFireworks(){for(let k=0;k<7;k++)setTimeout(()=>{const o={};trackPos(400+U((Math.random()-.5)*30),W+16+Math.random()*8,o);launch(o.x,o.z,4);},k*230);}
 function commentary(){
   const ms=COURSE.milestones||[[50,'첫 번째 곡선 구간! 선두는 {n} 선수'],[200,'200m 통과! 레이스 절반, 선두 {n}'],[300,'마지막 곡선 지나 300m! 선두 {n}'],[350,'결승선까지 50m! {n} 선수가 앞서갑니다']];
-  for(const [d,t] of ms){if(leaderP>=d&&!milestones.has(d)){milestones.add(d);say(t.replace('{n}',names[order[0]]),'중계');if(d===200){startWave();say('관중석에서 파도타기가 시작됩니다!','응원석');}}}
-  if(!veil&&simT-lastOvertake>3&&leaderP>30&&leaderP<399){
+  for(const [d,t] of ms){if(leaderP>=d&&!milestones.has(d)){milestones.add(d);say(t.replace('{n}',names[order[0]]),'중계');if(d===200){startWave();say('관중석에서 파도타기가 시작됩니다!','응원석',false,0);}}}
+  if(!veil&&simT-lastOvertake>5&&leaderP>30&&leaderP<399){
     const top=order.slice(0,Math.min(3,N));
-    for(let r=0;r<top.length;r++){const a=top[r],pr=prevTop.indexOf(a);if(prevTop.length&&(pr>r||pr<0)&&!FIN[a]){const b=prevTop[r];if(b!==undefined&&b!==a){say(`${names[a]} 선수, ${names[b]} 선수를 재끼고 ${r+1}위로!`,'순위변동',r===0);lastOvertake=simT;break;}}}
+    for(let r=0;r<top.length;r++){const a=top[r],pr=prevTop.indexOf(a);if(prevTop.length&&(pr>r||pr<0)&&!FIN[a]){const b=prevTop[r];if(b!==undefined&&b!==a){say(`${names[a]} 선수, ${names[b]} 선수를 재끼고 ${r+1}위로!`,'순위변동',r===0,r===0?2:0);lastOvertake=simT;break;}}}
     prevTop=top;
   }
 }
@@ -2451,8 +2459,9 @@ function drawLabels(){
 
 // ================= HUD =================
 let capQ=[],capUntil=0;
-function say(txt,tag,hot){capQ.push({txt,tag,hot});if(capQ.length>3)capQ.shift();}
-function updateCaption(){const el=$('#caption');if(realT>capUntil){if(capQ.length){const c=capQ.shift();$('#capTxt').textContent=c.txt;const t=$('#capTag');t.textContent=c.tag;t.className='tag'+(c.hot?' red':'');el.classList.remove('off');capUntil=realT+3.2;}else el.classList.add('off');}}
+let capCur=-1,capAt=0;
+function say(txt,tag,hot,prio){prio=prio===undefined?1:prio;capQ.push({txt,tag,hot,prio,t:realT});capQ.sort((a,b)=>b.prio-a.prio||a.t-b.t);if(capQ.length>2)capQ.length=2;}
+function updateCaption(){const el=$('#caption');capQ=capQ.filter(c=>realT-c.t<(c.prio>=2?6:3.5));const pre=capQ.length&&capQ[0].prio>capCur&&realT>capAt+1.5;if(realT>capUntil||pre){if(capQ.length){const c=capQ.shift();$('#capTxt').textContent=c.txt;const t=$('#capTag');t.textContent=c.tag;t.className='tag'+(c.hot?' red':'');el.classList.remove('off');capUntil=realT+3.4;capAt=realT;capCur=c.prio;}else{el.classList.add('off');capCur=-1;}}}
 function showBig(t,cls){const b=$('#big');b.innerHTML='';if(!t)return;const e=document.createElement('b');e.textContent=t;if(cls)e.className=cls;b.appendChild(e);}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let hudT=0;
@@ -2692,7 +2701,7 @@ function runRound(list,seed){
 }
 function startCountdown(){
   resetRunners();allocRec();
-  simT=0;leaderP=0;slow=1;endWait=-1;raceOver=false;milestones=new Set();lastOvertake=0;prevTop=[];capQ=[];capUntil=0;followId=-1;
+  simT=0;leaderP=0;slow=1;endWait=-1;raceOver=false;milestones=new Set();lastOvertake=0;prevTop=[];capQ=[];capUntil=0;capCur=-1;capAt=0;followId=-1;
   veil=false;shoeDone=false;evs=[];pipEv=null;recent=[];BUD={};BSIDE={};celebDone=false;diveCount=0;TE={on:false};nextEvT=5+rnd()*2;podiumIdx=[];excite=0;waves=[];hidePip();
   sortRanks();
   $('#setup').hidden=true;$('#results').hidden=true;$('#showResBtn').hidden=true;$('#hud').hidden=false;setCam('auto');
