@@ -166,6 +166,17 @@ textarea#names{width:100%;min-height:250px;resize:vertical;background:rgba(255,2
 .saved{display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto}
 .saved .it{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;padding:6px 6px 6px 12px;font-size:13px}
 .saved .it small{color:var(--muted);margin-left:6px;font-family:var(--f-num);font-size:13px}
+.logtop{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.6}
+.logtop b{color:var(--text)}.logtop .top{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.logtop .top span{background:rgba(255,200,61,.14);border:1px solid rgba(255,200,61,.35);color:var(--text);border-radius:999px;padding:1px 8px;font-size:12px}
+.loglist{display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto}
+.loglist .day{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin:6px 0 0}
+.loglist .ent{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13px;min-width:0}
+.loglist .ent .meta{font-size:11.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap}
+.loglist .ent .meta b{color:var(--accent);font-family:var(--f-num)}
+.loglist .ent .ws{margin-top:3px;word-break:keep-all;overflow-wrap:anywhere}
+.loglist .ent.cur{border-color:rgba(255,200,61,.45)}
+.logbtns{margin-top:8px;flex-wrap:wrap}
 .saved .empty{font-size:12px;color:var(--muted);padding:10px 2px;line-height:1.6}
 .import{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fmt{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;padding:12px}
@@ -250,8 +261,8 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
 .watchwait h1{margin:0;font-size:26px}.watchwait h1 em{font-style:normal;color:var(--accent)}.watchwait h1 span{color:#4cc9f0}
 .watchwait .wstat{margin:6px 0 0;font-size:17px;font-weight:800;color:#4cc9f0}
 .watchwait .wsub{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
-.credit{margin:6px 0 0;font-size:12px;color:var(--muted);letter-spacing:.01em}.credit b{color:var(--accent);font-weight:800}
-.watchwait .credit{margin-top:14px}
+.credit{margin:0;padding:10px 16px 14px;text-align:center;font-size:11px;color:var(--muted);opacity:.55;letter-spacing:.02em}
+.watchwait .credit{margin-top:10px;padding:0}
 .watchwait .wtips{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:12px;color:var(--muted)}
 .qrsheet{position:fixed;inset:0;z-index:95;background:rgba(5,8,20,.88);display:flex;align-items:center;justify-content:center;padding:16px}
 .qrcard{background:#fff;color:#141a2e;border-radius:18px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:min(92vw,460px);text-align:center}
@@ -338,7 +349,6 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
       <div>
         <h1 id="setTitle">400m <em>뽑기</em> 레이스</h1>
         <p id="setDesc">트랙 한 바퀴를 먼저 들어온 순서대로 당첨. 최대 200명까지 함께 달립니다.</p>
-        <p class="credit">제작 <b>김현태 선생님</b> (MAC_GWI) · 봉산중 BSPN</p>
       </div>
       <div class="headside"><span class="lane-chip" id="setChip">LANE 1–9 · 400 M</span><button class="fsbtn" id="fsBtn" type="button">⛶ 전체화면</button></div>
     </div>
@@ -354,6 +364,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
           <button class="tab on" data-tab="type" role="tab">명단 넣기</button>
           <button class="tab" data-tab="num" role="tab">자동 번호</button>
           <button class="tab" data-tab="saved" role="tab">저장된 명단 <span id="savedN"></span></button>
+          <button class="tab" data-tab="log" role="tab">당첨 기록 <span id="logN"></span></button>
         </div>
         <div class="pane" data-pane="type" id="typePane">
           <div class="import">
@@ -387,6 +398,19 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
         <div class="pane" data-pane="saved" hidden>
           <div class="saved" id="savedList"></div>
           <div class="inline"><input id="saveName" placeholder="명단 이름 (예: 1학년 3반)" aria-label="저장할 명단 이름"><button class="btn pri" id="saveBtn">지금 명단 저장</button></div>
+        </div>
+        <div class="pane" data-pane="log" hidden>
+          <div class="logtop" id="logTop"></div>
+          <div class="loglist" id="logList"></div>
+          <div class="inline logbtns">
+            <button class="btn" id="logSkipToday">오늘 당첨자 빼기</button>
+            <button class="btn" id="logSkipAll">기록된 당첨자 모두 빼기</button>
+          </div>
+          <div class="inline logbtns">
+            <button class="btn" id="logCsv">기록 파일로 받기</button>
+            <button class="btn" id="logClear">기록 지우기</button>
+            <span class="hint" id="logMsg"></span>
+          </div>
         </div>
         <div class="inline">
           <button class="btn" id="dupBtn" hidden>중복 정리</button>
@@ -461,6 +485,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
         <button class="go" id="startBtn">출발선으로!</button>
       </div>
     </div>
+    <p class="credit">제작 김현태 선생님 (MAC_GWI)</p>
   </div>
 </div>
 
@@ -470,7 +495,7 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
   <p class="wstat" id="wwStatus">연결하는 중…</p>
   <p class="wsub" id="wwSub">진행자가 출발하면 이 화면에서 경기가 자동으로 시작돼요.</p>
   <div class="wtips"><span>📱 가로로 돌리면 더 크게 보여요</span><span>🔊 소리는 경기 중 '효과음 켬'을 누르면 나와요</span></div>
-  <p class="credit">제작 <b>김현태 선생님</b> (MAC_GWI) · 봉산중 BSPN</p>
+  <p class="credit">제작 김현태 선생님 (MAC_GWI)</p>
 </div></div>
 <div class="qrsheet" id="qrSheet" hidden><div class="qrcard">
   <b>QR을 찍으면 중계 화면이 열려요</b>
@@ -2177,7 +2202,7 @@ slotsEl.addEventListener('paste',e=>{
 });
 slotsEl.addEventListener('click',e=>{const b=e.target.closest('.x');if(!b)return;const k=+b.dataset.k;SL.splice(k,1);renderSlots();syncTA();});
 $('#dupBtn').onclick=()=>{setList([...new Set(SL.map(v=>v.trim()).filter(Boolean))]);};
-function showTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));document.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.pane!==t);if(t==='saved')renderSaved();}
+function showTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));document.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.pane!==t);if(t==='saved')renderSaved();if(t==='log')renderLog();}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 // excel / csv import
 function loadXLSX(){return new Promise((res,rej)=>{if(window.XLSX)return res();const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('load'));document.head.appendChild(sc);});}
@@ -2278,9 +2303,9 @@ let resRecorded=false;
 function showResults(){
   state='results';$('#hud').hidden=true;$('#showResBtn').hidden=true;
   const win=finishOrder.slice(0,K);
-  if(!resRecorded){resRecorded=true;history.push({round,names:win.map(i=>names[i])});}
+  let logged=false;if(!resRecorded){resRecorded=true;history.push({round,names:win.map(i=>names[i])});logged=logWin(win.map(i=>names[i]));}
   $('#resTitle').innerHTML=seqMode?`${round}회차 <em>결과</em>`:'추첨 <em>결과</em>';
-  $('#resSub').textContent=`${N}명 중 ${K}명 당첨 · ${SPORTS[sport].name} · ${mode==='human'?'사람':'동물'} 선수`;
+  $('#resSub').textContent=`${N}명 중 ${K}명 당첨 · ${SPORTS[sport].name} · ${mode==='human'?'사람':'동물'} 선수`+(logged?' · 당첨 기록에 저장됨':'');
   $('#resList').innerHTML=win.map((i,r)=>`<div class="winner ${r<3?'p'+(r+1):''}"><div class="wr">${r+1}</div><div class="wn">${esc(names[i])}</div><div class="wt">${FT[i].toFixed(2)}초</div></div>`).join('');
   $('#allSum').textContent=`이번 판 전체 순위 (${N}명)`;
   $('#allList').innerHTML=resOrder.map((i,r)=>`<div><b>${r+1}</b><span>${esc(names[i])}${r<K?' · 당첨':''}</span></div>`).join('');
@@ -2377,6 +2402,64 @@ function loop(now){
   drawLabels();
 }
 
+
+// ================= 당첨 기록 (this browser only) =================
+function getLog(){try{const a=JSON.parse(localStorage.getItem('race400_log')||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}}
+function putLog(a){try{localStorage.setItem('race400_log',JSON.stringify(a.slice(-600)));}catch(e){}}
+function rosterLabel(list){
+  const o=getSaved(),set=new Set(list);
+  for(const k of Object.keys(o)){const l=o[k];if(l.length===list.length&&l.every(x=>set.has(x)))return k;}
+  const nm=($('#saveName')&&$('#saveName').value.trim())||'';
+  return nm||'직접 입력한 명단';
+}
+function curLabel(){const l=(roster&&roster.length?roster:parseNames());return rosterLabel(l);}
+function logWin(win){
+  if(typeof LIVE!=='undefined'&&LIVE.watch)return false;
+  const a=getLog();a.push({t:Date.now(),label:rosterLabel(roster&&roster.length?roster:names),sport:SPORTS[sport].name,n:N,round:seqMode?round:0,w:win});
+  putLog(a);renderLogN();return true;
+}
+function renderLogN(){const n=getLog().length;$('#logN').textContent=n?n:'';}
+function fmtD(t){const d=new Date(t);return `${d.getMonth()+1}월 ${d.getDate()}일`;}
+function fmtT(t){const d=new Date(t);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function sameDay(a,b){const x=new Date(a),y=new Date(b);return x.getFullYear()===y.getFullYear()&&x.getMonth()===y.getMonth()&&x.getDate()===y.getDate();}
+function renderLog(){
+  renderLogN();
+  const a=getLog(),lab=curLabel(),mine=a.filter(e=>e.label===lab);
+  const cnt={};mine.forEach(e=>e.w.forEach(n=>cnt[n]=(cnt[n]||0)+1));
+  const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,6);
+  $('#logTop').innerHTML=a.length?`지금 명단 <b>${esc(lab)}</b> · 기록 ${mine.length}판`+(top.length?`<div class="top">${top.map(([n,c])=>`<span>${esc(n)} ${c}회</span>`).join('')}</div>`:''):'';
+  if(!a.length){$('#logList').innerHTML='<div class="empty" style="font-size:12px;color:var(--muted);padding:10px 2px;line-height:1.6">아직 기록이 없어요. 경기가 끝나면 당첨자가 여기에 자동으로 쌓여요. 기록은 이 기기 브라우저에만 저장돼요.</div>';return;}
+  let h='',day='';
+  a.slice().reverse().slice(0,200).forEach(e=>{const d=fmtD(e.t);if(d!==day){day=d;h+=`<div class="day">${d}${sameDay(e.t,Date.now())?' · 오늘':''}</div>`;}
+    h+=`<div class="ent${e.label===lab?' cur':''}"><div class="meta"><b>${fmtT(e.t)}</b><span>${esc(e.label)}</span><span>${esc(e.sport)}</span>${e.round?`<span>${e.round}회차</span>`:''}<span>${e.n}명 중 ${e.w.length}명</span></div><div class="ws">${e.w.map((n,i)=>`${i+1}. ${esc(n)}`).join('  ')}</div></div>`;});
+  $('#logList').innerHTML=h;
+}
+function logMsg(t){const m=$('#logMsg');m.textContent=t;clearTimeout(m._t);m._t=setTimeout(()=>m.textContent='',3500);}
+function skipWinners(today){
+  const a=getLog(),lab=curLabel(),list=parseNames();
+  const src=a.filter(e=>e.label===lab&&(!today||sameDay(e.t,Date.now())));
+  const ws=new Set();src.forEach(e=>e.w.forEach(n=>ws.add(n)));
+  const rest=list.filter(n=>!ws.has(n)),out=list.length-rest.length;
+  if(!out){logMsg(today?'오늘 이 명단에서 당첨된 사람이 없어요':'이 명단의 당첨 기록이 없어요');return;}
+  if(rest.length<2){logMsg('빼고 나면 2명이 안 돼서 그대로 뒀어요');return;}
+  setList(rest);logMsg(`${out}명을 뺐어요 · 남은 ${rest.length}명`);
+}
+$('#logSkipToday').onclick=()=>skipWinners(true);
+$('#logSkipAll').onclick=()=>skipWinners(false);
+$('#logClear').onclick=()=>{const b=$('#logClear');if(!b._arm){b._arm=1;b.textContent='한 번 더 누르면 지워져요';setTimeout(()=>{b._arm=0;b.textContent='기록 지우기';},3000);return;}
+  b._arm=0;b.textContent='기록 지우기';putLog([]);try{localStorage.removeItem('race400_log');}catch(e){}renderLog();logMsg('기록을 지웠어요');};
+$('#logCsv').onclick=async()=>{
+  const a=getLog();if(!a.length){logMsg('받을 기록이 없어요');return;}
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const rows=[['날짜','시간','명단','종목','회차','참가 인원','순위','이름']];
+  a.forEach(e=>{const d=new Date(e.t),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;e.w.forEach((n,i)=>rows.push([ds,fmtT(e.t),e.label,e.sport,e.round||'',e.n,i+1,n]));});
+  const csv='﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n');
+  const fn=`뽑기레이스_당첨기록_${new Date().toISOString().slice(0,10)}.csv`;
+  const dl=await getDownloads();
+  if(dl){try{await dl.save({filename:fn,data:csv});logMsg('기록 파일을 건넸어요');}catch(e){if(e&&e.code!=='declined')logMsg('파일을 건네지 못했어요');}return;}
+  try{const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const el=document.createElement('a');el.href=url;el.download=fn;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);logMsg('기록 파일을 받았어요');}catch(e){logMsg('이 화면에서는 파일을 받을 수 없어요');}
+};
+renderLogN();
 
 // ================= 중계 =================
 // 두 가지 연결: (1) Claude 안에서 열면 Claude room  (2) 그 밖(웹 주소)에서 열면 공개 MQTT 중계(로그인 불필요, 암호화)

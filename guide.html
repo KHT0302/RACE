@@ -59,7 +59,8 @@ body{margin:0;background:#e9ebf2;color:var(--ink);font-family:"Noto Sans KR",sys
 .tips li::before{content:"";position:absolute;left:4px;top:.55em;width:9px;height:9px;border-radius:2px;background:var(--track);transform:rotate(45deg)}
 .safe{background:#fff7dc;border:1px solid #f1d98a;border-radius:14px;padding:14px 16px;font-size:14px}
 .safe b{font-weight:900}
-.ft{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 30px 20px;color:var(--muted);font-size:12.5px}
+.ft{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 30px 20px;color:var(--muted);font-size:12px}
+.ft .mk{opacity:.6}
 .print{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--navy);color:var(--gold);border:0;border-radius:999px;padding:12px 18px;font:inherit;font-weight:900;cursor:pointer;box-shadow:0 8px 24px rgba(15,22,48,.3)}
 .print:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media (max-width:640px){
@@ -101,7 +102,6 @@ body{margin:0;background:#e9ebf2;color:var(--ink);font-family:"Noto Sans KR",sys
     <span class="chip">BSPN · 400 M</span>
     <h1>400m <em>뽑기</em> 레이스</h1>
     <p>선생님용 사용 안내 · 설치도 로그인도 필요 없어요</p>
-    <p class="by">제작 <b>김현태 선생님</b> (MAC_GWI) · 봉산중학교 BSPN</p>
   </header>
 
   <section class="hero" aria-label="접속 방법">
@@ -180,7 +180,7 @@ body{margin:0;background:#e9ebf2;color:var(--ink);font-family:"Noto Sans KR",sys
   </section>
 
   <footer class="ft">
-    <span>제작 김현태 선생님 (MAC_GWI) · 봉산중학교 BSPN</span>
+    <span class="mk">제작 김현태 선생님 (MAC_GWI)</span>
     <span>kht0302.github.io/RACE</span>
   </footer>
 </main>
