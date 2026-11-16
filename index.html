@@ -140,6 +140,8 @@ textarea#names{width:100%;min-height:250px;resize:vertical;background:rgba(255,2
 .seg input:focus-visible+label{outline:2px solid var(--accent)}
 .opt{display:flex;flex-direction:column;gap:7px}
 .seg.six{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+.seg.eight{grid-template-columns:repeat(4,1fr)}
+@media (max-width:520px){.seg.eight{grid-template-columns:repeat(2,1fr)}}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-size:18px;font-weight:700}
 .stepper input{width:74px;text-align:center;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:9px;padding:7px;font-family:var(--f-num);font-size:20px;font-weight:700}
@@ -427,13 +429,15 @@ body.watch #setup,body.watch #quitBtn,body.watch #primaryBtn,body.watch #seconda
       <div class="col">
         <div class="opt">
           <div class="lab">종목</div>
-          <div class="seg six">
+          <div class="seg six eight">
             <input type="radio" name="sport" id="spRun" value="run" checked><label for="spRun">달리기<small>400m 트랙</small></label>
             <input type="radio" name="sport" id="spObs" value="obstacle"><label for="spObs">장애물 코스<small>허들·해머·진흙</small></label>
             <input type="radio" name="sport" id="sp_swim" value="swim"><label for="sp_swim">수영<small>바다 100m</small></label>
             <input type="radio" name="sport" id="sp_climb" value="climb"><label for="sp_climb">암벽 등반<small>16m 와이드 월</small></label>
             <input type="radio" name="sport" id="sp_hall" value="hall"><label for="sp_hall">학교 복도<small>급식실까지</small></label>
             <input type="radio" name="sport" id="sp_slide" value="slide"><label for="sp_slide">워터슬라이드<small>나선 280m</small></label>
+            <input type="radio" name="sport" id="sp_school" value="school"><label for="sp_school">등교 지각<small>교문까지 240m</small></label>
+            <input type="radio" name="sport" id="sp_lunch" value="lunch"><label for="sp_lunch">급식실 가기<small>5층→1층 계단</small></label>
           </div>
         </div>
         <div class="opt">
@@ -1171,6 +1175,217 @@ const SLIDE={scale:SLSC,kph:1,tubes:true,sideSign:-1,camDY:0.8,pos:slidePos,buil
   events:[60,61,62,63,64,5],specials:false,
   milestones:[[100,'첫 번째 회전! 선두 {n}'],[200,'절반! 속도가 붙습니다, 선두 {n}'],[300,'마지막 회전! 선두 {n}'],[360,'착수 풀이 보입니다! {n} 선수 앞서갑니다']]};
 
+
+// ================= generic path (lines + right-hand arcs, optional slope) =================
+function makePath(x0,z0,th0,segs){
+  // seg: {L, turn:0|rad (turn toward -lateral), r, dy, tag}
+  let x=x0,z=z0,th=th0,y=0,m=0;const S=[];
+  for(const g of segs){
+    const len=g.turn?g.r*g.turn:g.L;
+    S.push(Object.assign({m0:m,len,x,z,th,y},g));
+    if(g.turn){const lx=-Math.sin(th),lz=Math.cos(th),cx=x-lx*g.r,cz=z-lz*g.r;th-=g.turn;x=cx+(-Math.sin(th))*g.r;z=cz+Math.cos(th)*g.r;}
+    else{x+=Math.cos(th)*g.L;z+=Math.sin(th)*g.L;}
+    y+=g.dy||0;m+=len;
+  }
+  const total=m;
+  function at(mm,d,o){
+    let k=0;
+    if(mm<0)k=0;else{while(k<S.length-1&&mm>=S[k].m0+S[k].len)k++;}
+    const g=S[k];let u=mm-g.m0;
+    if(mm>total){u=mm-g.m0;}
+    o.seg=k;o.tag=g.tag;o.lap=g.lap;
+    if(g.turn&&u>=0&&u<=g.len){
+      const lx0=-Math.sin(g.th),lz0=Math.cos(g.th),cx=g.x-lx0*g.r,cz=g.z-lz0*g.r,t=g.th-u/g.r,lx=-Math.sin(t),lz=Math.cos(t);
+      o.x=cx+lx*(g.r+d);o.z=cz+lz*(g.r+d);o.hx=Math.cos(t);o.hz=Math.sin(t);
+    }else{
+      // line (or extension of first/last segment)
+      let bx=g.x,bz=g.z,bt=g.th;
+      if(g.turn){ // past end of a final arc: continue straight from its end
+        const lx0=-Math.sin(g.th),lz0=Math.cos(g.th),cx=g.x-lx0*g.r,cz=g.z-lz0*g.r;bt=g.th-g.turn;bx=cx+(-Math.sin(bt))*g.r;bz=cz+Math.cos(bt)*g.r;u-=g.len;}
+      const lx=-Math.sin(bt),lz=Math.cos(bt);
+      o.x=bx+Math.cos(bt)*u+lx*d;o.z=bz+Math.sin(bt)*u+lz*d;o.hx=Math.cos(bt);o.hz=Math.sin(bt);
+    }
+    const uu=clamp(u,0,g.len);o.y=g.y+(g.dy||0)*(g.len?uu/g.len:0);
+    o.yaw=undefined;o.pitch=0;return o;
+  }
+  return {at,total,segs:S};
+}
+
+// ================= 등교 지각 레이스 =================
+const SCH_SC=0.6;let SCH=null;const SCH_CW=150/SCH_SC; // crosswalk (s units)
+function schPath(){return makePath(-70,30,0,[{L:132},{turn:Math.PI/2,r:9},{L:240-132-9*Math.PI/2}]);}
+function schoolRed(t){const p=((t%12)+12)%12;return p>=6&&p<11;}
+let schFx=null;
+function flatAt(mesh,x,y,z,lx,lz){const gp=new THREE.Group();mesh.rotation.x=-Math.PI/2;gp.add(mesh);gp.position.set(x,y,z);gp.rotation.y=Math.atan2(-lz,lx);return gp;}
+function buildSchool(w){
+  const g=stadium,o={};SCH=schPath();schFx={gate:[],cars:[],lamps:[],gp:0};SCHOOL._rc=-99;
+  const gr=new THREE.Mesh(new THREE.PlaneGeometry(700,700),toon({color:0x6f9b5a}));gr.rotation.x=-Math.PI/2;gr.position.y=-0.03;g.add(gr);
+  const pv=tex(64,64,(c,ww,h)=>{c.fillStyle='#d9cdb8';c.fillRect(0,0,ww,h);c.fillStyle='#c7b89d';for(let y=0;y<4;y++)for(let x=0;x<4;x++)if((x+y)%2)c.fillRect(x*16,y*16,16,16);c.strokeStyle='#b8a888';c.lineWidth=1;for(let k=0;k<=4;k++){c.beginPath();c.moveTo(k*16,0);c.lineTo(k*16,h);c.moveTo(0,k*16);c.lineTo(ww,k*16);c.stroke();}});
+  g.add(new THREE.Mesh(ribbon(-U(45),400+U(40),U(1),-1,w+1,0.01,0.01),toon({map:pv,side:THREE.DoubleSide})));
+  const curb=toon({color:0xb9bec9});
+  [-1.15,w+1.15].forEach(d=>g.add(new THREE.Mesh(ribbon(-U(45),400+U(40),U(1),d,d,0,0.18),toon({color:0xb9bec9,side:THREE.DoubleSide}))));
+  // road across at crosswalk
+  trackPos(SCH_CW,w/2,o);const LX=-o.hz,LZ=o.hx;
+  g.add(flatAt(new THREE.Mesh(new THREE.PlaneGeometry(260,9),toon({color:0x3b3f4a})),o.x,0.02,o.z,LX,LZ));
+  [-4.3,4.3].forEach(e=>g.add(flatAt(new THREE.Mesh(new THREE.PlaneGeometry(260,0.18),new THREE.MeshBasicMaterial({color:0xf4f6fb})),o.x+o.hx*e,0.03,o.z+o.hz*e,LX,LZ)));
+  const zb=new THREE.MeshBasicMaterial({color:0xf4f6fb});
+  for(let d=-0.8;d<=w+0.8;d+=1.0){trackPos(SCH_CW,d,o);g.add(flatAt(new THREE.Mesh(new THREE.PlaneGeometry(0.55,8),zb),o.x,0.035,o.z,LX,LZ));}
+  // traffic lights (facing walkers)
+  [-1.8,w+1.8].forEach(d=>{trackPos(SCH_CW-U(5.2),d,o);const p=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,3.2,8),toon({color:0x58607a}));p.position.set(o.x,1.6,o.z);g.add(p);
+    const box=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.95,0.32),toon({color:0x1d2233}));box.position.set(o.x,3.1,o.z);box.rotation.y=Math.atan2(o.hx,o.hz);g.add(box);
+    const red=new THREE.Mesh(new THREE.CircleGeometry(0.16,16),new THREE.MeshBasicMaterial({color:0xff3b3b})),grn=new THREE.Mesh(new THREE.CircleGeometry(0.16,16),new THREE.MeshBasicMaterial({color:0x2cff7a}));
+    const yaw=Math.atan2(-o.hx,-o.hz);[red,grn].forEach((m,k)=>{m.position.set(o.x-o.hx*0.17,3.3-k*0.4,o.z-o.hz*0.17);m.rotation.y=yaw;g.add(m);});schFx.lamps.push({red,grn});});
+  // cars
+  const carCols=[0xe63946,0x3a86ff,0xf4f6fb,0xffc83d];
+  for(let k=0;k<3;k++){const c=new THREE.Group(),col=toon({color:carCols[k%4]});const b=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.0,1.9),col);b.position.y=0.75;c.add(b);
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.8,1.7),toon({color:0xbfe0f2}));cab.position.set(-0.3,1.6,0);c.add(cab);
+    [[-1.4,0.95],[1.4,0.95],[-1.4,-0.95],[1.4,-0.95]].forEach(([x,z])=>{const wh=new THREE.Mesh(new THREE.CylinderGeometry(0.38,0.38,0.3,12),toon({color:0x1d2233}));wh.rotation.x=Math.PI/2;wh.position.set(x,0.38,z);c.add(wh);});
+    g.add(c);schFx.cars.push({m:c,k});}
+  schFx.cw={x:o.x,z:o.z};trackPos(SCH_CW,w/2,o);schFx.cw={x:o.x,z:o.z,hx:o.hx,hz:o.hz};
+  // buildings & shops along the way
+  const shops=[['편의점','#2d6be0'],['문구점','#e63946'],['분식','#ff8c42'],['학원','#3ddc97'],['빵집','#c77dff'],['PC방','#1d2233']];
+  const winT=tex(128,128,(c,ww,h)=>{c.fillStyle='#e9e3d6';c.fillRect(0,0,ww,h);c.fillStyle='#9ec7e8';for(let y=0;y<4;y++)for(let x=0;x<3;x++)c.fillRect(10+x*40,10+y*30,26,18);},1,1);
+  let si=0;
+  for(let s=-U(30);s<SCH_CW-U(8);s+=U(14)){
+    trackPos(s,w+5,o);const yaw=Math.atan2(o.hx,o.hz);
+    const sh=new THREE.Mesh(new THREE.BoxGeometry(6,3.6,9),toon({color:0xf2ece0}));sh.position.set(o.x+(-o.hz)*2.5,1.8,o.z+o.hx*2.5);sh.rotation.y=yaw;g.add(sh);
+    const [nm,col]=shops[si++%shops.length];const sg=textPlane(nm,4.4,1.1,col,'#ffffff');trackPos(s,w+2.45,o);sg.position.set(o.x,3.0,o.z);sg.rotation.y=Math.atan2(o.hz,-o.hx);g.add(sg);
+  }
+  for(let s=-U(30);s<SCH_CW-U(8);s+=U(22)){trackPos(s,-12,o);const yaw=Math.atan2(o.hx,o.hz);const h=18+((s*7)%3)*4;const ap=new THREE.Mesh(new THREE.BoxGeometry(10,h,14),toon({map:winT.clone()}));ap.material.map.repeat.set(3,h/6);ap.material.map.needsUpdate=true;ap.position.set(o.x,h/2,o.z);ap.rotation.y=yaw;g.add(ap);}
+  const trunkM=toon({color:0x7a5230}),leafM=toon({color:0x3f8a46});
+  for(let s=SCH_CW+U(8);s<400-U(8);s+=U(9))[-2.6,w+2.6].forEach(d=>{trackPos(s,d,o);const t=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,1.8,6),trunkM);t.position.set(o.x,0.9,o.z);g.add(t);const l=new THREE.Mesh(new THREE.SphereGeometry(1.1,10,8),leafM);l.position.set(o.x,2.3,o.z);g.add(l);});
+  // school wall + gate at finish
+  trackPos(400+U(3.5),w/2,o);const gy=Math.atan2(o.hx,o.hz),lx=-o.hz,lz=o.hx,fx=o.x,fz=o.z;
+  const wallM=toon({color:0xd8cdb6}),capM=toon({color:0x8a5a3a});
+  [-1,1].forEach(sg=>{const half=w/2+1.4,len=60;const cx=fx+lx*sg*(half+len/2),cz=fz+lz*sg*(half+len/2);
+    const wl=new THREE.Mesh(new THREE.BoxGeometry(0.5,1.8,len),wallM);wl.position.set(cx,0.9,cz);wl.rotation.y=gy+Math.PI/2;g.add(wl);
+    const cp=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.2,len),capM);cp.position.set(cx,1.9,cz);cp.rotation.y=gy+Math.PI/2;g.add(cp);
+    const post=new THREE.Mesh(new THREE.BoxGeometry(1.0,3.4,1.0),toon({color:0x9aa0ad}));post.position.set(fx+lx*sg*half,1.7,fz+lz*sg*half);g.add(post);
+    const door=new THREE.Mesh(new THREE.BoxGeometry(0.15,1.7,half),toon({color:0x5b6170}));door.userData={sg,half};door.rotation.y=gy+Math.PI/2;g.add(door);schFx.gate.push(door);});
+  schFx.gateF={x:fx,z:fz,lx,lz,gy};
+  const sign=textPlane('뽑기중학교',Math.min(w+2.6,9),1.0,'#1f3c88','#ffffff');sign.position.set(fx+o.hx*0.6,3.9,fz+o.hz*0.6);sign.rotation.y=Math.atan2(-o.hx,-o.hz);g.add(sign);
+  const late=textPlane('지각 체크 중!',3.2,0.7,'#ffffff','#e63946');trackPos(400-U(2),w+2.2,o);late.position.set(o.x,2.4,o.z);late.rotation.y=Math.atan2(-o.hx,-o.hz);g.add(late);
+  finishStrip(w,0);
+  // school yard + building
+  trackPos(400+U(30),w/2,o);g.add(flatAt(new THREE.Mesh(new THREE.PlaneGeometry(70,46),toon({color:0xc9a77a})),o.x,0.015,o.z,-o.hz,o.hx));
+  trackPos(400+U(62),w/2,o);const bld=new THREE.Mesh(new THREE.BoxGeometry(70,16,12),toon({map:(()=>{const t=winT.clone();t.repeat.set(12,3);t.needsUpdate=true;return t;})()}));bld.position.set(o.x,8,o.z);bld.rotation.y=gy;g.add(bld);
+  const clk=new THREE.Mesh(new THREE.CircleGeometry(1.4,24),new THREE.MeshBasicMaterial({color:0xffffff}));clk.position.set(o.x-o.hx*6.05,13,o.z-o.hz*6.05);clk.rotation.y=Math.atan2(-o.hx,-o.hz);g.add(clk);
+  // spectators: a few parents/students on sidewalk edges
+  trackPos(400+U(22),w/2,o);PODIUM.x=o.x;PODIUM.z=o.z;
+  SCHOOL.orbit=[120,60,120,0];
+}
+const SCHOOL={scale:SCH_SC,kph:1.95*SCH_SC,
+  width:n=>clamp(Math.sqrt(n)*1.1,5,11),
+  pos:(s,d,o)=>(SCH||(SCH=schPath())).at(s*SCH_SC,d,o),
+  build:buildSchool,
+  update:dt=>{if(!schFx)return;const t=(state==='review'&&rv)?rv.rt:simT,red=state==='setup'?false:schoolRed(t);
+    schFx.lamps.forEach(l=>{l.red.material.color.set(red?0xff3b3b:0x3a1414);l.grn.material.color.set(red?0x0f2a18:0x2cff7a);});
+    const c=schFx.cw,lx=-c.hz,lz=c.hx,ph=((t%12)+12)%12;
+    schFx.cars.forEach(cr=>{let u;if(red&&ph>=6){u=-70+(ph-6+cr.k*1.6)*30;}else u=-80-cr.k*9;cr.m.visible=u>-75&&u<80;const off=(cr.k%2?-2.2:2.2);
+      cr.m.position.set(c.x+lx*u+c.hx*off,0,c.z+lz*u+c.hz*off);cr.m.rotation.y=Math.atan2(-lz,lx);});
+    const want=(state==='podium'||state==='results'||state==='view'||(finishOrder.length>=K&&state!=='setup'))?1:0;
+    schFx.gp+=(want-schFx.gp)*Math.min(1,dt*1.5);const G=schFx.gateF;
+    schFx.gate.forEach(dr=>{const {sg,half}=dr.userData,cpos=sg*((1-schFx.gp)*half*1.5+schFx.gp*half*0.5);dr.position.set(G.x+G.lx*cpos,0.85,G.z+G.lz*cpos);});},
+  zone:(i,sPrev,s)=>{const stop=SCH_CW-U(4.6);if(sPrev<stop&&s>=stop&&schoolRed(simT)){const ph=((simT%12)+12)%12,dur=Math.max(0.6,11-ph+0.25);
+      const q=rankOf[i]>15&&i!==followId,cap=(simT-(SCHOOL._rc||-99)>6)?'빨간불! {n} 선수 횡단보도 앞에서 멈춥니다. 초록불 기다려요':null;if(cap)SCHOOL._rc=simT;
+      startEvent(71,i,{special:true,dur,quiet:q||!cap,cap,noPip:true});}},
+  events:[1,2,3,4,5,6,7,9,10,12,13,14,15,50,54,70],evW:{50:3,70:3,54:1.5},evRepeat:[50],teacherExit:1,
+  milestones:[[100,'아파트 단지를 빠져나갑니다! 선두 {n}'],[160,'횡단보도 구간! 신호를 잘 봐야 해요, 선두 {n}'],[280,'마지막 모퉁이! 교문이 보입니다, 선두 {n}'],[360,'교문 닫히기 직전! {n} 선수 앞서갑니다']]};
+
+// ================= 급식실 가기 (5층 계단) =================
+const LU_FH=3.6,LU_LS=9,LU_RC=1.2,LU_TOTAL=24+8*LU_LS+7*Math.PI*LU_RC+26,LU_SC=LU_TOTAL/400;let LUP=null;
+function luPath(){
+  const segs=[{L:24,tag:'c5'}];
+  for(let k=0;k<4;k++){segs.push({L:LU_LS,dy:-LU_FH/2,tag:'f',lap:k});segs.push({turn:Math.PI,r:LU_RC,tag:'land',lap:k});segs.push({L:LU_LS,dy:-LU_FH/2,tag:'f',lap:k});if(k<3)segs.push({turn:Math.PI,r:LU_RC,tag:'floor',lap:k});}
+  segs.push({L:26,tag:'c1'});
+  return makePath(-24,0,0,segs);
+}
+function luY0(){return 4*LU_FH;}
+let luFx=null;
+function buildLunch(w){
+  const g=stadium,o={};LUP=luPath();luFx={chutes:[],used:0};LUNCH._cn=0;LUNCH._next=0;
+  const gr=new THREE.Mesh(new THREE.PlaneGeometry(500,500),toon({color:0x6f9b5a}));gr.rotation.x=-Math.PI/2;gr.position.y=-0.03+0;g.add(gr);
+  const Y0=luY0(),M=LUP.total,s1=M/LU_SC;
+  // y offset: path y starts at 0 and goes negative -> shift so 5F=Y0
+  const flT=tex(64,64,(c,ww,h)=>{c.fillStyle='#e9e3d3';c.fillRect(0,0,ww,h);c.fillStyle='#d9cfb8';c.fillRect(0,0,32,32);c.fillRect(32,32,32,32);});
+  g.add(new THREE.Mesh(ribbon(-U(30),s1+U(18),U(0.5),-0.35,w+0.35,0.02,0.02),toon({map:flT,side:THREE.DoubleSide})));
+  // underside slab
+  g.add(new THREE.Mesh(ribbon(-U(30),s1+U(18),U(0.5),-0.35,w+0.35,-0.25,-0.25),toon({color:0xb8b0a0,side:THREE.DoubleSide})));
+  // steps on flights
+  const stepG=new THREE.BoxGeometry(1,1,1),stepM=toon({color:0xcfc6b2}),noseM=toon({color:0x3ddc97});
+  const flights=LUP.segs.filter(sg=>sg.tag==='f'),nst=12,cnt=flights.length*nst;
+  const st=new THREE.InstancedMesh(stepG,stepM,cnt),ns=new THREE.InstancedMesh(stepG,noseM,cnt),mm=new THREE.Matrix4(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),ps=new THREE.Vector3(),eu=new THREE.Euler();let k=0;
+  flights.forEach(sg=>{for(let j=0;j<nst;j++){const mmid=sg.m0+(j+0.5)/nst*sg.len;LUP.at(mmid,w/2,o);const y=o.y+Y0;const tread=sg.len/nst;
+    eu.set(0,Math.atan2(o.hx,o.hz),0);q.setFromEuler(eu);
+    sc.set(w+0.7,0.16,tread);ps.set(o.x,y+0.03,o.z);mm.compose(ps,q,sc);st.setMatrixAt(k,mm);
+    sc.set(w+0.7,0.05,0.08);ps.set(o.x-o.hx*tread*0.46,y+0.12,o.z-o.hz*tread*0.46);mm.compose(ps,q,sc);ns.setMatrixAt(k,mm);k++;}});
+  g.add(st);g.add(ns);
+  // outer walls with windows (visible only from inside) and inner railing
+  const wt=tex(128,128,(c,ww,h)=>{c.fillStyle='#f2ecd9';c.fillRect(0,0,ww,h);c.fillStyle='#9ec7e8';c.fillRect(24,30,80,52);c.strokeStyle='#fff';c.lineWidth=6;c.strokeRect(24,30,80,52);c.fillStyle='#7aa58a';c.fillRect(0,104,ww,24);});
+  g.add(new THREE.Mesh(ribbon(-U(30),s1,U(0.5),w+0.35,w+0.35,0,LU_FH-0.1),toon({map:wt})));
+  const rail=new THREE.MeshBasicMaterial({color:0xc9d6e8,transparent:true,opacity:0.35,side:THREE.DoubleSide,depthWrite:false});
+  g.add(new THREE.Mesh(ribbon(24/LU_SC,(M-26)/LU_SC,U(0.5),-0.35,-0.35,0,1.0),rail));
+  g.add(new THREE.Mesh(ribbon(24/LU_SC,(M-26)/LU_SC,U(0.5),-0.45,-0.25,1.0,1.0),toon({color:0xffc83d,side:THREE.DoubleSide})));
+  // 5F and 1F corridors: inner wall + doors
+  const iw=tex(128,128,(c,ww,h)=>{c.fillStyle='#f2ecd9';c.fillRect(0,0,ww,h);c.fillStyle='#4c86c9';for(let k=0;k<3;k++)c.fillRect(8+k*40,40,34,88);});
+  g.add(new THREE.Mesh(ribbon(-U(30),24/LU_SC,U(1),-0.35,-0.35,0,LU_FH-0.1),toon({map:iw,side:THREE.BackSide})));
+  g.add(new THREE.Mesh(ribbon((M-26)/LU_SC,s1,U(1),-0.35,-0.35,0,LU_FH-0.1),toon({map:iw,side:THREE.BackSide})));
+  const doorM=toon({color:0x9a6a44});
+  [[-U(18),'5-1'],[-U(6),'5-2'],[U(6),'5-3'],[U(16),'5-4']].forEach(([s,t])=>{LUP.at(s*LU_SC,w+0.4,o);const yaw=Math.atan2(-o.hz,o.hx),y=o.y+Y0;
+    const dr=new THREE.Mesh(new THREE.PlaneGeometry(1.1,2.2),doorM);dr.position.set(o.x,y+1.1,o.z);dr.rotation.y=yaw;g.add(dr);
+    const pl=textPlane(t+'반',1.0,0.35,'#2d6be0','#ffffff');pl.position.set(o.x,y+2.5,o.z);pl.rotation.y=yaw;g.add(pl);});
+  // floor signs at each flight start
+  let fl=5;LUP.segs.forEach(sg=>{if(sg.tag==='f'&&sg.dy&&((sg.lap!==undefined)&&LUP.segs.indexOf(sg)%4===1)){LUP.at(sg.m0+0.6,w+0.4,o);const p=textPlane(fl+'층 ↓',1.6,0.6,'#121a33','#ffc83d');p.position.set(o.x,o.y+Y0+2.3,o.z);p.rotation.y=Math.atan2(-o.hz,o.hx);g.add(p);fl--;}});
+  const menu=textPlane('오늘의 메뉴: 치킨마요덮밥',3.2,0.7,'#ffffff','#e63946');LUP.at(12,w+0.4,o);menu.position.set(o.x,o.y+Y0+2.0,o.z);menu.rotation.y=Math.atan2(-o.hz,o.hx);g.add(menu);
+  // cafeteria at the end
+  LUP.at(M,w/2,o);const cx=o.x,cz=o.z,hx=o.hx,hz=o.hz,cy=Math.atan2(hx,hz);
+  const caf=new THREE.Mesh(new THREE.PlaneGeometry(26,30),toon({color:0xe3ddd0}));caf.rotation.x=-Math.PI/2;caf.position.set(cx+hx*14,0.015,cz+hz*14);g.add(caf);
+  const sg=textPlane('급식실',Math.min(w+1.2,6),0.8,'#ffc83d','#1a1405');sg.position.set(cx,LU_FH-0.6,cz);sg.rotation.y=Math.atan2(-hx,-hz);g.add(sg);
+  const tblM=toon({color:0xf4f6fb}),legM=toon({color:0x9aa0ad}),list=[];
+  for(let r=0;r<3;r++)for(let c=-1;c<=1;c+=2){const ax=cx+hx*(10+r*5)+(-hz)*c*5,az=cz+hz*(10+r*5)+hx*c*5;
+    const t=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.08,4.2),tblM);t.position.set(ax,0.75,az);t.rotation.y=cy;g.add(t);
+    for(let j=-1;j<=1;j++)[-1,1].forEach(sd=>{if(rnd()<0.35)return;list.push({x:ax+(-hz)*sd*1.15+hx*j*1.2,y:0,z:az+hx*sd*1.15+hz*j*1.2,yaw:cy+(sd>0?-Math.PI/2:Math.PI/2),s:400});});}
+  addCrowd(list);
+  const ctr=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.0,9),toon({color:0xb8c4d8}));ctr.position.set(cx+hx*24,0.5,cz+hz*24);ctr.rotation.y=cy;g.add(ctr);
+  finishStrip(w,0);
+  // parachutes (pool)
+  for(let k=0;k<3;k++){const gp=new THREE.Group();const dome=new THREE.Mesh(new THREE.SphereGeometry(1.5,16,8,0,Math.PI*2,0,Math.PI/2),toon({color:[0xff4d6d,0xffc83d,0x4cc9f0][k],side:THREE.DoubleSide}));dome.scale.set(1,0.55,1);dome.position.y=2.6;gp.add(dome);
+    const lm=new THREE.LineBasicMaterial({color:0x333333}),pts=[];[[1.4,0],[-1.4,0],[0,1.4],[0,-1.4]].forEach(([x,z])=>{pts.push(new THREE.Vector3(x,2.6,z),new THREE.Vector3(0,1.25,0));});
+    gp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),lm));gp.visible=false;g.add(gp);luFx.chutes.push(gp);}
+  LUP.at(M+12,-8,o);PODIUM.x=o.x;PODIUM.z=o.z;
+  LUNCH.orbit=[46,22,46,8];
+}
+function luSLand(){return (LUP.total-24)/LU_SC;}
+const LUNCH={scale:LU_SC,kph:1.95*LU_SC,noShadow:true,sideSign:-1,
+  width:n=>clamp(Math.sqrt(n)*0.8,3,6),
+  pos:(s,d,o)=>{const r=(LUP||(LUP=luPath())).at(s*LU_SC,d,o);r.y+=luY0();return r;},
+  build:buildLunch,
+  update:dt=>{if(luFx){luFx.used=0;luFx.chutes.forEach(c=>c.visible=false);}},
+  override:(i,src,TP)=>{
+    if(src.ST[i]!==76||!luFx)return;const f=clamp(src.STT[i]/(STD[i]||6),0,1),s0=src.S[i],o={};
+    trackPos(s0,src.D[i],o);const ax=o.x,ay=o.y,az=o.z;trackPos(s0,W+1.6,o);const wx=o.x,wy=o.y+0.9,wz=o.z;
+    const sl=luSLand();trackPos(sl,W+3.2,o);const ox=o.x,oz=o.z;trackPos(sl,W-0.4,o);const lx=o.x,lz=o.z;
+    let x,y,z,hx,hz;
+    if(f<0.1){const k=f/0.1;x=ax+(wx-ax)*k;z=az+(wz-az)*k;y=ay+(wy-ay)*k+Math.sin(k*Math.PI)*0.8;hx=wx-ax;hz=wz-az;}
+    else if(f<0.18){const k=(f-0.1)/0.08;x=wx;z=wz;y=wy-k*1.4;hx=ox-wx;hz=oz-wz;}
+    else if(f<0.86){const k=(f-0.18)/0.68,e=k*k*(3-2*k);x=wx+(ox-wx)*e+Math.sin(k*9)*0.4;z=wz+(oz-wz)*e;y=(wy-1.4)*(1-k);hx=ox-wx;hz=oz-wz;}
+    else{const k=(f-0.86)/0.14;x=ox+(lx-ox)*k;z=oz+(lz-oz)*k;y=0;hx=lx-ox;hz=lz-oz;}
+    const n=Math.hypot(hx,hz)||1;TP.x=x;TP.y=y;TP.z=z;TP.hx=hx/n;TP.hz=hz/n;TP.yaw=undefined;TP.pitch=0;
+    if(f>=0.15&&f<0.88&&luFx.used<luFx.chutes.length){const c=luFx.chutes[luFx.used++];c.visible=true;c.position.set(x,y,z);c.rotation.y=Math.sin(f*20)*0.15;}
+  },
+  onEventEnd:(i,st)=>{if(st!==76)return;const sl=luSLand()+U(1.2);P[i]=(sl-S0[i])/(1-S0[i]/400);S[i]=sl;D[i]=W-0.4;V[i]=2*velMul;},
+  zone:(i,sPrev,s)=>{
+    if(LUNCH._cn>=[1,1,2][evLevel]||simT<LUNCH._next||N<6)return;
+    const o={};LUP.at(s*LU_SC,0,o);if(o.tag!=='f'||o.lap===undefined||o.lap>2)return;
+    if(rankOf[i]<=Math.ceil(N*0.5))return;
+    const ls=S[order[0]],sl=luSLand();if(ls<sl-U(22)||ls>sl-U(3))return;
+    if(rnd()<0.03*Math.max(0,s-sPrev)*EVM[evLevel]){
+      const q=rankOf[i]>15&&i!==followId;
+      if(startEvent(76,i,{special:true,dur:6.2,quiet:false,noPip:false})){LUNCH._cn++;LUNCH._next=simT+8;}
+    }},
+  events:[1,2,3,4,5,6,10,12,13,15,50,54,78],evW:{50:4,78:2,54:1.5},evRepeat:[50],teacherExit:1,
+  milestones:[[80,'5층 탈출! 계단으로 내려갑니다, 선두 {n}'],[200,'3층 통과! 선두 {n}'],[300,'1층이 보입니다! 선두 {n}'],[360,'급식실 문 앞! {n} 선수 앞서갑니다']]};
+
 const OVAL={pos:ovalPos,scale:1};
 const SPORTS={
   run:{name:'달리기',title:'뽑기 올림픽 · 400m 달리기',course:OVAL},
@@ -1178,7 +1393,9 @@ const SPORTS={
   swim:{name:'수영',title:'뽑기 올림픽 · 수영 100m',course:SWIM},
   climb:{name:'암벽 등반',title:'뽑기 올림픽 · 암벽 등반',course:CLIMB},
   hall:{name:'학교 복도',title:'뽑기 올림픽 · 학교 복도',course:HALL},
-  slide:{name:'워터슬라이드',title:'뽑기 올림픽 · 워터슬라이드',course:SLIDE}
+  slide:{name:'워터슬라이드',title:'뽑기 올림픽 · 워터슬라이드',course:SLIDE},
+  school:{name:'등교 지각 레이스',title:'뽑기 올림픽 · 등교 지각 레이스',course:SCHOOL},
+  lunch:{name:'급식실 가기',title:'뽑기 올림픽 · 급식실 가기',course:LUNCH}
 };
 COURSE=OVAL;
 
@@ -1362,7 +1579,7 @@ const lie=(f,a,b,peak)=>{if(f<a)return ease(f/a)*peak;if(f<b)return peak;return 
 function evPose(o,st,v,u,dur,A,i){
   const f=u/dur;
   switch(st){
-    case 1:{const w=Math.sin(u*20)*0.22;Object.assign(o,{hL:1.35,kL:1.55,fL:0,hR:0.12,kR:1.7,fR:0.9,lean:0.75,twist:0,sLf:1.3,sRf:1.15,sLz:0.05,sRz:-0.05,eL:0.45+w,eR:0.45-w,head:0.45,yx:0});break;}
+    case 70:case 1:{const w=Math.sin(u*20)*0.22;Object.assign(o,{hL:1.35,kL:1.55,fL:0,hR:0.12,kR:1.7,fR:0.9,lean:0.75,twist:0,sLf:1.3,sRf:1.15,sLz:0.05,sRz:-0.05,eL:0.45+w,eR:0.45-w,head:0.45,yx:0});break;}
     case 2:{const b=u*9;
       if(v===0){const hop=Math.max(0,Math.sin(b)),hp2=Math.max(0,-Math.sin(b));
         Object.assign(o,{hL:0.55*hop,kL:0.9*hop+0.15,fL:0.3,hR:0.55*hp2,kR:0.9*hp2+0.15,fR:0.3,lean:0.08,twist:0,sLf:1.15,sRf:1.2,sLz:-0.42,sRz:0.42,eL:0.7+Math.sin(b*2)*0.15,eR:0.7+Math.sin(b*2)*0.15,yaw:Math.sin(u*4.5)*0.35,head:0.05,yx:Math.abs(Math.sin(b))*0.16,mo:1});}
@@ -1433,6 +1650,11 @@ function evPose(o,st,v,u,dur,A,i){
     case 44:o.sRz=-2.0+0.4*Math.sin(u*10);o.sRf=0.3;o.eR=0.4;o.yaw=0.8;o.mo=1;break;
     case 45:{const w=Math.sin(u*12);Object.assign(o,{twist:w*0.4,hL:0.8+0.4*w,hR:0.8-0.4*w,kL:1.2,kR:1.2,sLf:2.4,sRf:2.4,mo:1});break;}
     case 46:Object.assign(o,{yaw:1.1,sRf:2.0,sRz:-0.3,eR:0.5,sLf:2.5,sLz:0.3,eL:0.6,mo:1,head:-0.2});break;
+    case 71:{const b=Math.sin(u*6);Object.assign(o,{hL:0.05,kL:0.1+Math.max(0,b)*0.25,hR:0.05,kR:0.1+Math.max(0,-b)*0.25,fL:0,fR:0,sLf:0.1,sRf:0.1,sLz:0.15,sRz:-0.15,eL:0.3,eR:0.3,lean:0,twist:0,head:-0.15,yx:0});break;}
+    case 78:Object.assign(o,{hL:0,kL:0.08,hR:0,kR:0.08,fL:0,fR:0,sLf:0.2,sRf:0.2,sLz:0.7,sRz:-0.7,eL:2.0,eR:2.0,lean:-0.05,twist:0,head:-0.45,yx:0,mo:Math.sin(u*5)>0.6?1:0});break;
+    case 76:{if(f<0.12)Object.assign(o,{hL:1.2,kL:1.6,hR:1.2,kR:1.6,fL:0,fR:0,sLz:2.6,sRz:-2.6,sLf:0,sRf:0,eL:0.2,eR:0.2,lean:-0.1,twist:0,mo:1,yx:0});
+      else if(f<0.86){const sw=Math.sin(u*3)*0.25;Object.assign(o,{hL:0.25+sw,kL:0.35,hR:0.25-sw,kR:0.35,fL:0.4,fR:0.4,sLz:2.75,sRz:-2.75,sLf:0.15,sRf:0.15,eL:0.35,eR:0.35,lean:0,twist:0,head:-0.25,mo:1,yx:0});}
+      break;}
     case 51:Object.assign(o,{hL:0,kL:0.08,hR:0,kR:0.08,fL:0,fR:0,sLz:2.95,sRz:-2.95,sLf:0,sRf:0,eL:0,eR:0,lean:0,twist:0,head:0.35,yx:0,mo:0});break;
     case 52:{const w=Math.sin(u*7);Object.assign(o,{hL:0.35*w,hR:-0.35*w,kL:0.15+0.3*Math.max(0,-w),kR:0.15+0.3*Math.max(0,w),sLf:-0.5,sRf:-0.5,sLz:0.1,sRz:-0.1,eL:0.4,eR:0.4,lean:-0.05,twist:0,head:-0.15,yx:0,mo:Math.sin(u*14)>0.5?1:0});break;}
     case 54:{const side=BSIDE[i]||1;Object.assign(o,{hL:0,kL:0.1,hR:0,kR:0.1,fL:0,fR:0,yaw:side*1.2,sRz:-0.8+0.4*Math.sin(u*7+i),sRf:0.8,eR:1.2,sLz:0.15,sLf:0.1,eL:0.3,lean:0,twist:0,head:Math.sin(u*3)*0.1,yx:0,mo:Math.sin(u*14+i)>0?1:0});break;}
@@ -1554,7 +1776,7 @@ function renderRunners(src,curT,ctx){
       LX[i]=x;LY[i]=y+o.yx+lyh;LZ[i]=z;continue;
     }
     if(src.HID&&src.HID[i]){hideRunner(i);continue;}
-    trackPos(src.S[i],src.D[i],TP);
+    trackPos(src.S[i],src.D[i],TP);if(COURSE.override)COURSE.override(i,src,TP);
     const ty=TP.y,tyaw=TP.yaw!==undefined?TP.yaw:Math.atan2(TP.hx,TP.hz),tp=TP.pitch||0,tx=TP.x,tz=TP.z;
     const o=pose(i,src,curT,ctx);o.bp+=tp;
     let px=tx,pz=tz;if(COURSE.bodyOff){const f=COURSE.bodyOff(o);px+=TP.hx*f;pz+=TP.hz*f;}
@@ -1585,7 +1807,7 @@ function hideTeacher(){
 let veil=false,shoeDone=false,state='setup',simT=0,leaderP=0,slow=1,cdT=0,cdStep=-1,endWait=-1,raceOver=false,milestones=new Set(),lastOvertake=0,prevTop=[],realT=0;
 const sim={get S(){return S},get D(){return D},get ST(){return ST},get STT(){return STT},get V(){return V},get PH(){return PH},get HID(){return HID}};
 const newFin=[];
-const STOPS=new Set([1,2,3,4,8,9,10,12,13,20,21,22,23,24,30,31,36,40,41,42,45,46,51,52,54,62]);
+const STOPS=new Set([1,2,3,4,8,9,10,12,13,20,21,22,23,24,30,31,36,40,41,42,45,46,51,52,54,62,70,71,78]);
 function evSpeed(i){
   const st=ST[i];if(!st)return 1;const f=STT[i]/STD[i];
   switch(st){
@@ -1609,6 +1831,7 @@ function evSpeed(i){
     case 40:return f<0.16?-6:f<0.62?0:0.7;case 42:return 0.2;case 43:return f<0.4?2.6:0.8;case 44:return 0.3;
     case 52:return 0.32;
     case 60:return 0.6;case 61:return 1.0;case 63:return 1.25;case 64:return 0.9;
+    case 70:case 71:case 76:case 78:return 0;
   }
   return 1;
 }
@@ -1655,6 +1878,7 @@ function stepRace(dt){
       if(!ST[i])for(const hm of hammers){const bit=1<<hm.k;if(HIT[i]&bit||Math.abs(s-hm.s)>0.6)continue;const th=hamTheta(hm.k,simT),hd=W/2-ARM*Math.sin(th),hy=PIVY-ARM*Math.cos(th);
         if(hy<2.0&&Math.abs(D[i]-hd)<0.85){HIT[i]|=bit;const vel=-Math.cos(th)*Math.cos(simT*1.55+hm.k*2.1);KDIR[i]=vel>=0?1:-1;mishap(22,i,null);break;}}
     }
+    if(COURSE.zone&&!FIN[i]&&!ST[i]&&!raceOver)COURSE.zone(i,sPrev,S[i]);
     if(!FIN[i]&&P[i]>=400){FIN[i]=1;FT[i]=simT-dt+(400-pp)/Math.max(P[i]-pp,1e-4)*dt;finishOrder.push(i);newFin.push(i);}
   }
   if(newFin.length){finishOrder.sort((a,b)=>FT[a]-FT[b]);newFin.sort((a,b)=>FT[a]-FT[b]);newFin.forEach(onFinish);newFin.length=0;}
@@ -1732,7 +1956,11 @@ const EV={
   61:{n:'거꾸로 내려오기',d:4.4,w:2,wd:2,c:['{n} 선수 거꾸로 내려옵니다! 앞이 안 보여요','{n} 선수 뒤를 보며 질주 중']},
   62:{n:'중간에 걸림',d:2.8,w:2,wd:2.5,c:['{n} 선수 미끄럼틀 중간에 걸렸어요!','{n} 선수 {w}멈췄습니다! 엉덩이로 밀어요']},
   63:{n:'만세 질주',d:4.0,w:2,wd:1,c:['{n} 선수 만세! 속도가 더 붙습니다','{n} 선수 두 팔 들고 슈웅~']},
-  64:{n:'커브 튕김',d:2.6,w:2,wd:1.5,c:['{n} 선수 커브에서 붕 떴다!','{n} 선수 벽 타고 튕겨 오릅니다']}
+  64:{n:'커브 튕김',d:2.6,w:2,wd:1.5,c:['{n} 선수 커브에서 붕 떴다!','{n} 선수 벽 타고 튕겨 오릅니다']},
+  70:{n:'신발주머니',d:2.8,w:2,wd:2,c:['{n} 선수 신발주머니를 떨어뜨렸어요! 주섬주섬','{n} 선수 {w}신발주머니 줍는 중!']},
+  71:{n:'빨간불',d:3,w:0,wd:0,c:['빨간불! {n} 선수 신호 대기 중']},
+  76:{n:'낙하산 탈출',d:6.2,w:0,wd:0,c:['{n} 선수 창문으로 뛰어내립니다!! 낙하산 펼쳐요!','{n} 선수 계단 포기! 창문 밖으로 낙하산 다이브!']},
+  78:{n:'메뉴 확인',d:3.0,w:2,wd:1.5,c:['{n} 선수 게시판 앞에서 오늘 메뉴 확인 중… 치킨이다!','{n} 선수 {w}메뉴판 보고 감동합니다']}
 };
 const GAP=[[7,11],[3.5,6],[1.8,3.2]];
 let nextEvT=6,evs=[],pipEv=null,recent=[],BUD={},celebDone=false,diveCount=0,TE={on:false};
@@ -1774,7 +2002,7 @@ function startEvent(type,i,opts={}){
   return true;
 }
 function endEvent(i){
-  const st=ST[i];ST[i]=0;STT[i]=0;HID[i]=0;
+  const st=ST[i];ST[i]=0;STT[i]=0;HID[i]=0;if(COURSE.onEventEnd)COURSE.onEventEnd(i,st);
   if(STOPS.has(st)&&!FIN[i])BOOST[i]=3.5;
   if(st===15){delete BUD[i];}
 }
@@ -2055,7 +2283,7 @@ function updatePip(rdt){
     if(st===15&&e.j!==undefined){s=(S[e.i]+S[e.j])/2;d=(D[e.i]+D[e.j])/2;dist=5.6;}
     if(st===20){dist=7.5;h=3.4;d=d-1.2;}}
   if(lie){h=2.1;ly=0.4;dist=4.6;}
-  trackPos(s,d,TP);
+  trackPos(s,d,TP);if(COURSE.override&&e.i>=0&&e.type!==19)COURSE.override(e.i,sim,TP);
   if(COURSE.pipCam)COURSE.pipCam(e,u,lie);else{
   const ss=COURSE.sideSign||1,a=(0.6+u*0.18)*pipOrbit*ss+(ss<0?Math.PI*0:0),hx=TP.hx,hz=TP.hz,nx=-hz*ss,nz=hx*ss;
   const ox=hx*Math.cos(a)-nx*Math.sin(a),oz=hz*Math.cos(a)-nz*Math.sin(a);
@@ -2209,7 +2437,9 @@ obstacle:['장애물','코스','허들·그물·풀장·해머·진흙·벽을 �
 swim:['수영','레이스','바다 오픈워터 100m! 결승 터치패드를 손으로 먼저 친 순서대로 당첨.','OPEN WATER · 100 M'],
 climb:['클라이밍','레이스','넓은 16m 클라이밍 벽, 정상 라인을 먼저 터치한 순서대로 당첨.','WALL · 16 M'],
 hall:['복도','레이스','급식실까지 먼저 도착한 순서대로 당첨. 선생님 단속 주의!','HALLWAY · 240 M'],
-slide:['워터슬라이드','레이스','나선 슬라이드를 타고 먼저 착수한 순서대로 당첨.','SLIDE · 280 M']};
+slide:['워터슬라이드','레이스','나선 슬라이드를 타고 먼저 착수한 순서대로 당첨.','SLIDE · 280 M'],
+school:['등교','레이스','교문이 닫히기 전에! 횡단보도 신호를 지키며 교문을 먼저 통과한 순서대로 당첨.','SCHOOL GATE · 240 M'],
+lunch:['급식실','가기','5층 교실에서 계단으로 1층 급식실까지! 먼저 도착한 순서대로 당첨. 가끔 낙하산 역전도…','5F → 1F · STAIRS']};
 function setHead(){const v=(document.querySelector('input[name=sport]:checked')||{}).value||'run',h=SPHEAD[v]||SPHEAD.run;$('#setTitle').innerHTML='뽑기 <em>올림픽</em>';$('#setDesc').textContent=h[2];$('#setChip').textContent=h[3];}
 document.querySelectorAll('input[name=sport]').forEach(r=>r.addEventListener('change',()=>{setHead();if(state==='setup'){const l=parseNames().slice(0,MAXN);buildRunners(l.length>=2?l:names,document.querySelector('input[name=mode]:checked').value);}}));
 $('#clearBtn').onclick=()=>{const b=$('#clearBtn');if(!b.dataset.arm){b.dataset.arm=1;b.textContent='한 번 더 누르면 지워져요';setTimeout(()=>{delete b.dataset.arm;b.textContent='모두 지우기';},4000);return;}delete b.dataset.arm;b.textContent='모두 지우기';showTab('type');setList([]);renderSlots(0);};
